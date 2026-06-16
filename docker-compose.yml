@@ -322,11 +322,11 @@ services:
     networks:
       - agrovision-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO/dev/null http://localhost:80/ || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 30s
 
   # ── Nginx Reverse Proxy ───────────────────────────────────
 
@@ -346,7 +346,7 @@ services:
     networks:
       - agrovision-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO/dev/null http://localhost/ 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
