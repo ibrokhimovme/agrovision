@@ -71,7 +71,7 @@ async def proxy(
 
     body = await request.body()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         response = await client.request(
             method=request.method,
             url=url,
