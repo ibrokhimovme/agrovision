@@ -1198,4 +1198,24 @@ ADR-003 did NOT change the ADR-002 architecture stack. What changed at the **imp
 
 ---
 
-*End of project_memory.md — Last updated: 2026-06-16 (CH-005)*
+### CH-006
+- **Date:** 2026-06-17
+- **Task performed:** Established persistent state-driven execution framework
+- **Files created:**
+  - `.project-governance/project_state.md` — authoritative execution state (single source of truth for project progress)
+  - `.project-governance/execution/master_roadmap.md` — complete 16-phase development roadmap with Epic→Feature→Task breakdown, acceptance criteria, BRD/SRS traceability for all ~130 tasks
+  - `.project-governance/execution/development_backlog.md` — flat task list (~130 tasks) across all phases with status tracking
+  - `.project-governance/execution/phase_status.md` — phase-level status dashboard with verification checklists
+  - `.project-governance/execution/implementation_rules.md` — session start protocol, phase execution protocol, architecture rules, MVP protection rules, alignment verification requirements
+- **Requirements affected:** Governance only — no application code
+- **Reason for change:** User directive to establish structured development execution framework preventing ad-hoc implementation; ensures progress survives context compaction, new sessions, model restarts
+- **Impact assessment:**
+  - P-00 (Repository Validation) and P-01 (Runtime Readiness) verified VERIFIED_COMPLETE from repository inspection
+  - P-02 (Identity Service) identified as next phase — domain models and authenticate use case skeleton exist; migrations, endpoints, repository implementation, and tests are missing
+  - ~130 tasks defined across P-02 to P-15
+  - 17 FUTURE_RELEASE items explicitly catalogued and deferred
+  - All future work can be triggered with "Execute Phase X" or "Continue" commands
+
+---
+
+*End of project_memory.md — Last updated: 2026-06-17 (CH-006)*
