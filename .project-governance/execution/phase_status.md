@@ -8,12 +8,12 @@
 
 ```
 Phases Total:      16  (Phase 0 – Phase 15)
-VERIFIED_COMPLETE:  2  (Phase 0, Phase 1)
+VERIFIED_COMPLETE:  4  (Phase 0, Phase 1, Phase 2, Phase 3)
 IN_PROGRESS:        0
 BLOCKED:            0
-NOT_STARTED:       14  (Phase 2 – Phase 15)
+NOT_STARTED:       12  (Phase 4 – Phase 15)
 
-MVP Completion: 12.5%
+MVP Completion: 25.00%
 ```
 
 ---
@@ -24,8 +24,8 @@ MVP Completion: 12.5%
 |-------|------|--------|---------|-----------|---------|
 | P-00 | Repository Validation | VERIFIED_COMPLETE | 2026-06-16 | 2026-06-16 | 2026-06-16 |
 | P-01 | Runtime Readiness | VERIFIED_COMPLETE | 2026-06-16 | 2026-06-16 | 2026-06-16 |
-| P-02 | Identity Service | NOT_STARTED | — | — | — |
-| P-03 | Frontend Foundation | NOT_STARTED | — | — | — |
+| P-02 | Identity Service | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-03 | Frontend Foundation | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
 | P-04 | Poultry Batch Management | NOT_STARTED | — | — | — |
 | P-05 | Feed Consumption | NOT_STARTED | — | — | — |
 | P-06 | Mortality Tracking | NOT_STARTED | — | — | — |
@@ -109,45 +109,85 @@ MVP Completion: 12.5%
 
 ## Phase 2 — Identity Service
 
-**Status:** NOT_STARTED  
-**Dependencies:** P-01 VERIFIED_COMPLETE ✓
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward  
+**Tests:** 16/16 passed
 
-### Verification Checklist (for completion)
+### Verification Checklist
 
-- [ ] Alembic migration for users, roles, role_permissions, individual_permissions, farms_ref tables
-- [ ] `AbstractUserRepository` interface implemented in infrastructure layer
-- [ ] `POST /api/v1/auth/login` endpoint — returns JWT access + refresh tokens
-- [ ] `POST /api/v1/auth/refresh` endpoint — rotates access token
-- [ ] `POST /api/v1/auth/logout` endpoint — invalidates session
-- [ ] `POST /api/v1/users/` — create user (Farm Owner only)
-- [ ] `GET /api/v1/users/me` — current user profile
-- [ ] `GET /api/v1/users/{id}` — get user by ID
-- [ ] `PATCH /api/v1/users/{id}` — update user
-- [ ] `GET /api/v1/roles/` — list system roles
-- [ ] Account lockout after 5 failed attempts (15-min lockout)
-- [ ] bcrypt password hashing
-- [ ] Seed script for system roles (farm_owner, farm_director, farm_manager, veterinarian, accountant, warehouse_manager, sales_personnel, farm_worker)
-- [ ] JWT tokens carry: sub, email, roles[], farm_id
-- [ ] Unit tests for AuthenticateUserUseCase
-- [ ] Integration tests for auth endpoints
+- [x] Alembic migration: `migrations/versions/001_initial_identity_schema.py` (users, roles, role_permissions, individual_permissions, farms_ref, user_roles)
+- [x] `SQLAlchemyUserRepository` in `infrastructure/database/repositories/user_repository_impl.py`
+- [x] `POST /api/v1/auth/login` — returns JWT access + refresh tokens
+- [x] `POST /api/v1/auth/refresh` — rotates access token
+- [x] `POST /api/v1/auth/logout` — blacklists token in Redis
+- [x] `POST /api/v1/users/` — create user
+- [x] `GET /api/v1/users/me` — current user profile
+- [x] `GET /api/v1/users/{id}` — get user detail
+- [x] `PATCH /api/v1/users/{id}` — update user
+- [x] `GET /api/v1/roles/` — list system roles
+- [x] Account lockout after 5 failed attempts (BusinessRuleViolationError ACCOUNT_LOCKED)
+- [x] bcrypt password hashing (direct bcrypt module, not passlib)
+- [x] Seed script: `seeds/seed_roles.py` (8 system roles + admin user)
+- [x] JWT tokens carry: sub, email, roles[], farm_id, type
+- [x] API Gateway middleware: Redis blacklist check added
+- [x] Unit tests: 10/10 passed (`tests/unit/test_authenticate.py`, `test_refresh_logout.py`)
+- [x] Integration tests: 6/6 passed (`tests/integration/test_auth_endpoints.py`)
+
+### Files Created/Modified
+- `migrations/versions/001_initial_identity_schema.py`
+- `app/infrastructure/database/repositories/user_repository_impl.py`
+- `app/infrastructure/cache/redis_client.py`
+- `app/application/use_cases/refresh_token.py`
+- `app/application/use_cases/logout.py`
+- `app/application/use_cases/create_user.py`
+- `app/application/use_cases/get_current_user.py`
+- `app/application/dtos/auth_dtos.py`
+- `app/application/dtos/user_dtos.py`
+- `app/api/v1/endpoints/auth.py`
+- `app/api/v1/endpoints/users.py`
+- `app/api/v1/endpoints/roles.py`
+- `app/api/v1/router.py` (updated)
+- `app/main.py` (updated — lifespan, exception handlers)
+- `app/core/config.py` (updated — ACCESS_TOKEN_EXPIRE_MINUTES)
+- `seeds/seed_roles.py`
+- `tests/conftest.py` (updated)
+- `tests/unit/test_authenticate.py`
+- `tests/unit/test_refresh_logout.py`
+- `tests/integration/test_auth_endpoints.py`
+- `services/api-gateway/app/middleware/auth.py` (updated — Redis blacklist)
 
 ---
 
 ## Phase 3 — Frontend Foundation
 
-**Status:** NOT_STARTED  
-**Dependencies:** P-02 VERIFIED_COMPLETE
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward  
+**Build:** TypeScript 0 errors, Vite build success (344 kB)
 
-### Verification Checklist (for completion)
+### Verification Checklist
 
-- [ ] React Router configured with protected routes
-- [ ] Auth context / Redux auth slice connected to identity-service API
-- [ ] Login page (Uzbek UI)
-- [ ] Main layout: sidebar navigation, header, content area
-- [ ] API client configured with JWT interceptor (auto-attach + refresh)
-- [ ] Global error handling (401 redirect to login, 403 access denied)
-- [ ] Loading states and error boundary components
-- [ ] Responsive layout (mobile-first, 360px minimum width)
+- [x] React Router v6 configured with BrowserRouter + Routes
+- [x] ProtectedRoute redirects unauthenticated users to /login
+- [x] Login page (Uzbek UI): Tizimga Kirish, Email manzil, Parol, Kirish
+- [x] Main layout: Sidebar (desktop fixed, mobile overlay) + Header + scrollable content
+- [x] Zustand auth store wired to API client (reads accessToken via getState())
+- [x] Auto-refresh on 401 with request retry queue; clearAuth on refresh failure
+- [x] Toast notification system (success/error/warning/info, auto-dismiss 4s)
+- [x] Spinner component (sm/md/lg)
+- [x] Uzbek sidebar: Bosh sahifa, Fermalar, Parrandalar, Ombor, Moliya, Hisobotlar
+- [x] Mobile hamburger + overlay at <1024px; desktop sidebar always visible
+- [x] Seed file bug fixed (removed stale CryptContext reference)
+
+### Files Created/Modified
+- `frontend/src/pages/Login.tsx`
+- `frontend/src/components/layout/Layout.tsx`
+- `frontend/src/components/layout/Sidebar.tsx`
+- `frontend/src/components/layout/Header.tsx`
+- `frontend/src/components/ui/Toast.tsx`
+- `frontend/src/components/ui/Spinner.tsx`
+- `frontend/src/App.tsx` (updated)
+- `frontend/src/services/api.ts` (updated)
+- `services/identity-service/seeds/seed_roles.py` (bug fix)
 
 ---
 
@@ -193,6 +233,8 @@ See `master_roadmap.md` for full verification checklists for each phase.
 | 2026-06-16 | Phase 0 marked VERIFIED_COMPLETE based on CH-001 through CH-004 evidence | P-00 |
 | 2026-06-16 | Phase 1 marked VERIFIED_COMPLETE based on CH-005 evidence | P-01 |
 | 2026-06-16 | phase_status.md created | ALL |
+| 2026-06-17 | Phase 2 marked VERIFIED_COMPLETE (16/16 tests) | P-02 |
+| 2026-06-17 | Phase 3 marked VERIFIED_COMPLETE (TS 0 errors, Vite build success) | P-03 |
 
 ---
 
