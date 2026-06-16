@@ -1,0 +1,59 @@
+version: "3.9"
+
+# ============================================================
+# AgroVision — Development Hot-Reload Overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Mounts source code volumes for live reload on every service.
+# shared/ is mounted so edits to shared code are reflected without rebuild.
+# ============================================================
+
+services:
+
+  api-gateway:
+    volumes:
+      - ./services/api-gateway/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  identity-service:
+    volumes:
+      - ./services/identity-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+  farm-service:
+    volumes:
+      - ./services/farm-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+
+  livestock-service:
+    volumes:
+      - ./services/livestock-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
+
+  inventory-service:
+    volumes:
+      - ./services/inventory-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8004 --reload
+
+  finance-service:
+    volumes:
+      - ./services/finance-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8005 --reload
+
+  notification-service:
+    volumes:
+      - ./services/notification-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8006 --reload
+
+  reporting-service:
+    volumes:
+      - ./services/reporting-service/app:/app/app
+      - ./shared:/app/shared
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8007 --reload

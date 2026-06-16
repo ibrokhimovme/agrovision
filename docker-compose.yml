@@ -1,0 +1,353 @@
+version: "3.9"
+
+# ============================================================
+# AgroVision — Development Compose
+# Single command startup: docker compose up --build
+#
+# Build context for all services is the repo root so the
+# shared/ package is accessible in every image.
+# ============================================================
+
+networks:
+  agrovision-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agrovision}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agrovision_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-agrovision}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agrovision}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # REDISCLI_AUTH lets redis-cli ping work with password in health check
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-redis_dev}
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_dev}
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-agrovision}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq_dev}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-agrovision}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infrastructure/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── Application Services ──────────────────────────────────
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      IDENTITY_SERVICE_URL: http://identity-service:8001
+      FARM_SERVICE_URL: http://farm-service:8002
+      LIVESTOCK_SERVICE_URL: http://livestock-service:8003
+      INVENTORY_SERVICE_URL: http://inventory-service:8004
+      FINANCE_SERVICE_URL: http://finance-service:8005
+      NOTIFICATION_SERVICE_URL: http://notification-service:8006
+      REPORTING_SERVICE_URL: http://reporting-service:8007
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  identity-service:
+    build:
+      context: .
+      dockerfile: services/identity-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${IDENTITY_DB:-identity_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/0
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  farm-service:
+    build:
+      context: .
+      dockerfile: services/farm-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${FARM_DB:-farm_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/1
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  livestock-service:
+    build:
+      context: .
+      dockerfile: services/livestock-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${LIVESTOCK_DB:-livestock_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/2
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: services/inventory-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${INVENTORY_DB:-inventory_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/3
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  finance-service:
+    build:
+      context: .
+      dockerfile: services/finance-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${FINANCE_DB:-finance_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/4
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${NOTIFICATION_DB:-notification_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/5
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  reporting-service:
+    build:
+      context: .
+      dockerfile: services/reporting-service/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-agrovision}:${POSTGRES_PASSWORD:-agrovision_dev}@postgres:5432/${REPORTING_DB:-reporting_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_dev}@redis:6379/6
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-agrovision}:${RABBITMQ_PASSWORD:-rabbitmq_dev}@rabbitmq:5672/${RABBITMQ_VHOST:-agrovision}
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ── Frontend ──────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO/dev/null http://localhost:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Nginx Reverse Proxy ───────────────────────────────────
+
+  nginx:
+    image: nginx:1.25-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - agrovision-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO/dev/null http://localhost/ 2>/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

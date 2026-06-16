@@ -1,0 +1,122 @@
+{
+  "vhosts": [
+    { "name": "agrovision" }
+  ],
+  "exchanges": [
+    {
+      "name": "agrovision.events",
+      "vhost": "agrovision",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "agrovision.dlx",
+      "vhost": "agrovision",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "notification.events",
+      "vhost": "agrovision",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "agrovision.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "reporting.events",
+      "vhost": "agrovision",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "agrovision.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "finance.events",
+      "vhost": "agrovision",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "agrovision.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "inventory.events",
+      "vhost": "agrovision",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "agrovision.dlx",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "agrovision.dead_letters",
+      "vhost": "agrovision",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "agrovision.events",
+      "vhost": "agrovision",
+      "destination": "notification.events",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "agrovision.events",
+      "vhost": "agrovision",
+      "destination": "reporting.events",
+      "destination_type": "queue",
+      "routing_key": "#",
+      "arguments": {}
+    },
+    {
+      "source": "agrovision.events",
+      "vhost": "agrovision",
+      "destination": "finance.events",
+      "destination_type": "queue",
+      "routing_key": "batch.#",
+      "arguments": {}
+    },
+    {
+      "source": "agrovision.events",
+      "vhost": "agrovision",
+      "destination": "finance.events",
+      "destination_type": "queue",
+      "routing_key": "finance.#",
+      "arguments": {}
+    },
+    {
+      "source": "agrovision.events",
+      "vhost": "agrovision",
+      "destination": "inventory.events",
+      "destination_type": "queue",
+      "routing_key": "inventory.#",
+      "arguments": {}
+    },
+    {
+      "source": "agrovision.dlx",
+      "vhost": "agrovision",
+      "destination": "agrovision.dead_letters",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
+}

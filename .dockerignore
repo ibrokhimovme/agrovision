@@ -1,0 +1,36 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/*.egg-info
+**/.venv
+**/venv
+**/.env
+
+# Node artifacts
+**/node_modules
+**/dist
+**/.next
+**/build
+
+# Development files
+**/*.md
+!README.md
+.env.example
+docker-compose.dev.yml
+**/.DS_Store
+
+# Test and lint
+**/tests
+**/.github
+
+# Logs
+**/*.log
