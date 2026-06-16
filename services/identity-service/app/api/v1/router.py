@@ -1,12 +1,10 @@
-"""
-API v1 router for identity-service.
-Add sub-routers here as feature modules are implemented.
-"""
 from fastapi import APIRouter
 
-router = APIRouter()
+from app.api.v1.endpoints.auth import router as auth_router
+from app.api.v1.endpoints.users import router as users_router
+from app.api.v1.endpoints.roles import router as roles_router
 
-# TODO: include feature routers here as implementation progresses
-# Example:
-#   from app.api.v1.endpoints import farms
-#   router.include_router(farms.router, prefix="/farms", tags=["farms"])
+router = APIRouter()
+router.include_router(auth_router)
+router.include_router(users_router)
+router.include_router(roles_router)

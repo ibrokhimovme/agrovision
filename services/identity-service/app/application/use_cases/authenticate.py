@@ -60,9 +60,8 @@ class AuthenticateUserUseCase:
         return self._issue_tokens(user)
 
     def _verify_password(self, plain: str, hashed: str) -> bool:
-        from passlib.context import CryptContext
-        ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        return ctx.verify(plain, hashed)
+        import bcrypt
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
 
     def _issue_tokens(self, user) -> AuthTokens:
         now = datetime.now(timezone.utc)
