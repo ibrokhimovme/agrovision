@@ -63,26 +63,39 @@ export interface Farm {
   farm_type: FarmType;
   address?: string;
   region?: string;
+  owner_user_id: string;
   is_active: boolean;
+  notes?: string;
   created_at: string;
 }
 
 // ── Livestock / Batches ───────────────────────────────────────────────────────
 
 export type Species = 'broiler' | 'layer' | 'cattle' | 'sheep' | 'goat';
+export type PoultrySpecies = 'broiler' | 'layer';
 export type BatchStatus = 'quarantine' | 'active' | 'closed';
+export type BatchCloseReason = 'sale' | 'slaughter' | 'transfer' | 'disease' | 'other';
 
 export interface Batch {
   id: string;
   farm_id: string;
   section_id: string;
-  species: Species;
+  species: PoultrySpecies;
   status: BatchStatus;
+  batch_code?: string;
   initial_count: number;
   current_count: number;
   placement_date: string;
+  quarantine_end_date?: string;
   closed_at?: string;
-  closing_reason?: string;
+  close_reason?: BatchCloseReason;
+  supplier_name?: string;
+  chick_price_per_head?: number;
+  notes?: string;
+  total_mortality: number;
+  survival_rate: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
