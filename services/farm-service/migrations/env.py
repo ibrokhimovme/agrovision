@@ -10,9 +10,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-# Import all models so Alembic detects them
-# TODO: uncomment as models are added
-# from app.domain.models import *  # noqa: F401, F403
+from app.domain.models.farm import Farm, Building, Section  # noqa
 from shared.models.base import Base
 
 config = context.config
@@ -22,13 +20,18 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def get_url():
+def get_sync_url():
     from app.core.config import settings
     return settings.DATABASE_URL.replace("+asyncpg", "")
 
 
+def get_async_url():
+    from app.core.config import settings
+    return settings.DATABASE_URL  # keep +asyncpg for async engine
+
+
 def run_migrations_offline() -> None:
-    url = get_url()
+    url = get_sync_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -52,7 +55,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = get_url()
+    configuration["sqlalchemy.url"] = get_async_url()
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",

@@ -24,9 +24,11 @@ class Settings(BaseSettings):
     # RabbitMQ
     RABBITMQ_URL: str = "amqp://agrovision:agrovision@localhost:5672/agrovision"
 
-    # JWT (public key / secret for token verification)
+    # JWT
     JWT_SECRET_KEY: str = "changeme"
     JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:80"]
