@@ -17,8 +17,9 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://api-gateway:8000',
+        target: 'ws://notification-service:8006',
         ws: true,
+        rewrite: (path) => path.replace(/^\/ws/, '/api/v1/ws'),
       },
     },
   },

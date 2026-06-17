@@ -6,6 +6,8 @@ interface NotificationState {
   unreadCount: number;
   wsConnected: boolean;
   addNotification: (n: Notification) => void;
+  setNotifications: (ns: Notification[]) => void;
+  setUnreadCount: (count: number) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
   setWsConnected: (connected: boolean) => void;
@@ -22,6 +24,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       notifications: [n, ...state.notifications],
       unreadCount: state.unreadCount + (n.is_read ? 0 : 1),
     })),
+
+  setNotifications: (ns) => set({ notifications: ns }),
+  setUnreadCount: (count) => set({ unreadCount: count }),
 
   markRead: (id) =>
     set((state) => ({
