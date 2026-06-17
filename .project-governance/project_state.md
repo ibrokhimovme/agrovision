@@ -63,10 +63,10 @@ See `docs/development/commit-conventions.md` for commit format rules.
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-07 (Vaccination Management) — NEXT TO EXECUTE
-Last Verified Phase:   P-06 (Mortality Tracking) — VERIFIED_COMPLETE
-Overall Progress:      7 / 16 phases verified complete (43.75%)
-Next Action:           Execute Phase 7 — Vaccination Management
+Current Phase:         P-08 (Weight Sampling) — NEXT TO EXECUTE
+Last Verified Phase:   P-07 (Vaccination Management) — VERIFIED_COMPLETE
+Overall Progress:      8 / 16 phases verified complete (50.00%)
+Next Action:           Execute Phase 8 — Weight Sampling
 Blocker:               None
 ```
 
@@ -83,7 +83,7 @@ Blocker:               None
 | P-04 | Poultry Batch Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-05 | Feed Consumption | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-06 | Mortality Tracking | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
-| P-07 | Vaccination Management | NOT_STARTED | — | — |
+| P-07 | Vaccination Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-08 | Weight Sampling | NOT_STARTED | — | — |
 | P-09 | Inventory Integration | NOT_STARTED | — | — |
 | P-10 | Cost Tracking | NOT_STARTED | — | — |
@@ -315,6 +315,7 @@ Blocker:               None
 | P-04 | 2026-06-17 | 2026-06-17 | 1 day | 30+ files (see CL-004) |
 | P-05 | 2026-06-17 | 2026-06-17 | 1 day | 13 files (see CL-005) |
 | P-06 | 2026-06-17 | 2026-06-17 | 1 day | 12 files (see CL-006) |
+| P-07 | 2026-06-17 | 2026-06-17 | 1 day | 14 files (see CL-007) |
 
 ---
 
@@ -465,6 +466,31 @@ Every modification to the project must be recorded here. Never delete entries.
   - `frontend/src/pages/livestock/BatchDetailPage.tsx` (mortality summary, form, history table; SummaryCard color prop)
 - **Verification:** 19/19 unit tests passed; TypeScript 0 errors; Vite build success (371 kB)
 - **Requirements implemented:** SF-18 (mortality tracking), BP-15 (active batch only), BP-16 (count decrement)
+- **Services impacted:** livestock-service, frontend
+
+---
+
+### CL-007
+- **Date:** 2026-06-17
+- **Task:** Phase 7 — Vaccination Management
+- **Files Modified:**
+  - `services/livestock-service/app/domain/models/health.py` (vaccine_inventory_item_id/quantity/unit → Optional)
+- **Files Created:**
+  - `services/livestock-service/app/domain/repositories/vaccination_repository.py`
+  - `services/livestock-service/app/infrastructure/database/repositories/vaccination_repository_impl.py`
+  - `services/livestock-service/app/application/dtos/vaccination_dtos.py`
+  - `services/livestock-service/app/application/use_cases/create_vaccination_schedule.py`
+  - `services/livestock-service/app/application/use_cases/generate_batch_vaccination_plan.py`
+  - `services/livestock-service/app/application/use_cases/record_vaccination.py`
+  - `services/livestock-service/app/application/use_cases/get_batch_vaccinations.py`
+  - `services/livestock-service/app/api/v1/endpoints/vaccination.py`
+  - `services/livestock-service/tests/unit/test_vaccination.py`
+  - `services/livestock-service/app/api/v1/router.py` (vaccination_router added)
+  - `frontend/src/types/index.ts` (VaccinationRecord, VaccinationSchedule types)
+  - `frontend/src/services/batchService.ts` (vaccinationService with 5 methods)
+  - `frontend/src/pages/livestock/BatchDetailPage.tsx` (vaccination table + Bajarildi button, VaccStatusBadge)
+- **Verification:** 28/28 unit tests passed; TypeScript 0 errors; Vite build success (375 kB)
+- **Requirements implemented:** SF-07 (vaccination management), BP-07 (schedule templates), UC-03 (vaccination execution)
 - **Services impacted:** livestock-service, frontend
 
 ---
