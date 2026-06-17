@@ -7,13 +7,14 @@
 ## Overall Progress
 
 ```
-Phases Total:      16  (Phase 0 – Phase 15)
-VERIFIED_COMPLETE:  4  (Phase 0, Phase 1, Phase 2, Phase 3)
-IN_PROGRESS:        0
-BLOCKED:            0
-NOT_STARTED:       12  (Phase 4 – Phase 15)
+Phases Total:      18  (Phase 0 – Phase 17)
+VERIFIED_COMPLETE: 16  (Phase 0 – Phase 14, Phase 16)
+PARTIALLY_COMPLETE: 1  (Phase 15 — E2E tests done; performance/security/docs pending)
+NOT_STARTED:        1  (Phase 17 — User Management UI)
 
-MVP Completion: 25.00%
+MVP Core Workflow: COMPLETE
+New Requirements:  1 phase not started (P-17)
+Overall Progress:  88.9%
 ```
 
 ---
@@ -26,18 +27,20 @@ MVP Completion: 25.00%
 | P-01 | Runtime Readiness | VERIFIED_COMPLETE | 2026-06-16 | 2026-06-16 | 2026-06-16 |
 | P-02 | Identity Service | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
 | P-03 | Frontend Foundation | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
-| P-04 | Poultry Batch Management | NOT_STARTED | — | — | — |
-| P-05 | Feed Consumption | NOT_STARTED | — | — | — |
-| P-06 | Mortality Tracking | NOT_STARTED | — | — | — |
-| P-07 | Vaccination Management | NOT_STARTED | — | — | — |
-| P-08 | Weight Sampling | NOT_STARTED | — | — | — |
-| P-09 | Inventory Integration | NOT_STARTED | — | — | — |
-| P-10 | Cost Tracking | NOT_STARTED | — | — | — |
-| P-11 | Sales Management | NOT_STARTED | — | — | — |
-| P-12 | Profit Analysis | NOT_STARTED | — | — | — |
-| P-13 | Notifications | NOT_STARTED | — | — | — |
-| P-14 | Reporting | NOT_STARTED | — | — | — |
-| P-15 | MVP Stabilization | NOT_STARTED | — | — | — |
+| P-04 | Poultry Batch Management | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-05 | Feed Consumption | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-06 | Mortality Tracking | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-07 | Vaccination Management | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-08 | Weight Sampling | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-09 | Inventory Integration | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-10 | Cost Tracking | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-11 | Sales Management | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-12 | Profit Analysis | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-13 | Notifications | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-14 | Reporting | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-15 | MVP Stabilization | PARTIALLY_COMPLETE | 2026-06-17 | — | — |
+| P-16 | Farm Management CRUD | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
+| P-17 | User Management UI | NOT_STARTED | — | — | — |
 
 ---
 
@@ -193,30 +196,288 @@ MVP Completion: 25.00%
 
 ## Phase 4 — Poultry Batch Management
 
-**Status:** NOT_STARTED  
-**Dependencies:** P-02, P-03 VERIFIED_COMPLETE
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)  
+**Tests:** 9/9 unit tests passed
 
-### Verification Checklist (for completion)
+### Verification Checklist
 
-- [ ] Alembic migration: batches, weight_samplings, mortality_records, farms_ref (livestock_db)
-- [ ] `AbstractBatchRepository` interface + SQLAlchemy implementation
-- [ ] `POST /api/v1/batches/` — open new batch (placement)
-- [ ] `GET /api/v1/batches/` — list batches with pagination + filters
-- [ ] `GET /api/v1/batches/{id}` — batch detail
-- [ ] `PATCH /api/v1/batches/{id}` — update batch metadata
-- [ ] `POST /api/v1/batches/{id}/activate` — transition quarantine → active
-- [ ] `POST /api/v1/batches/{id}/close` — transition active → closed
-- [ ] Batch status state machine enforced (quarantine → active → closed)
-- [ ] Frontend: batch list page
-- [ ] Frontend: open new batch form
-- [ ] Frontend: batch detail view
-- [ ] Unit + integration tests
+- [x] Alembic migration: `001_initial_livestock_schema.py` (batches, farms_ref)
+- [x] Alembic migration: `002_add_health_tables.py` (vaccination_records, vaccination_schedules, medication_records, daily_health_logs)
+- [x] `AbstractBatchRepository` + `SQLAlchemyBatchRepository` implemented
+- [x] `POST /api/v1/batches/` — open new batch with QUARANTINE status
+- [x] `GET /api/v1/batches/` — paginated batch list with status/farm filters
+- [x] `GET /api/v1/batches/{id}` — batch detail with live stats
+- [x] `PATCH /api/v1/batches/{id}` — update batch notes/metadata
+- [x] `POST /api/v1/batches/{id}/activate` — quarantine → active (7-day minimum enforced)
+- [x] `POST /api/v1/batches/{id}/close` — active → closed
+- [x] BatchStatus state machine enforced (invalid transitions raise 422)
+- [x] Frontend: BatchListPage (190 lines)
+- [x] Frontend: NewBatchPage (236 lines)
+- [x] Frontend: BatchDetailPage (1175 lines — base shell)
+- [x] Unit tests: 9/9 passed
+
+**Known Gap (New Requirement):** `section_id` in NewBatchPage requires manual UUID entry from user. Must be replaced with cascade farm → building → section dropdown. Tracked as BN-FIX-01.
 
 ---
 
-## Phases 5–15 — Not Started
+## Phase 5 — Feed Consumption
 
-See `master_roadmap.md` for full verification checklists for each phase.
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] `FeedConsumption` domain model with batch_id, farm_id, feed_date, feed_type, quantity_kg, water_liters, age_days, recorded_by
+- [x] Alembic migration: `003_add_feed_consumptions.py`
+- [x] `RecordFeedConsumptionUseCase` — validates ACTIVE batch
+- [x] `GetBatchFeedHistoryUseCase`
+- [x] FCR calculation helper
+- [x] `POST /api/v1/batches/{id}/feed/` — record daily feed + water
+- [x] `GET /api/v1/batches/{id}/feed/` — paginated history
+- [x] `GET /api/v1/batches/{id}/feed/summary` — FCR, totals
+- [x] Frontend: feed recording form on BatchDetailPage (Uzbek labels)
+- [x] Frontend: water field on feed form
+- [x] Frontend: feed history table
+- [x] 13/13 unit tests passed (cumulative)
+
+---
+
+## Phase 6 — Mortality Tracking
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward
+
+### Verification Checklist
+
+- [x] Alembic migration: `004_add_mortality_records.py`
+- [x] `RecordMortalityUseCase` — batch.current_count decremented atomically
+- [x] `GetMortalityHistoryUseCase` with totals
+- [x] `POST /api/v1/batches/{id}/mortality/` — record mortality event
+- [x] `GET /api/v1/batches/{id}/mortality/` — paginated list
+- [x] `GET /api/v1/batches/{id}/mortality/summary` — total, rate %, cause breakdown
+- [x] Frontend: mortality form on BatchDetailPage
+- [x] Frontend: mortality stats cards (total, rate, daily)
+- [x] 19/19 unit tests passed (cumulative)
+
+---
+
+## Phase 7 — Vaccination Management
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward
+
+### Verification Checklist
+
+- [x] `CreateVaccinationScheduleUseCase` — age-based schedule templates per species
+- [x] `GenerateBatchVaccinationPlanUseCase` — creates PLANNED records on batch open
+- [x] `RecordVaccinationUseCase` — marks PLANNED as COMPLETED
+- [x] `POST /api/v1/vaccination-schedules/`
+- [x] `GET /api/v1/batches/{id}/vaccinations/`
+- [x] `PATCH /api/v1/vaccinations/{id}/complete`
+- [x] Frontend: vaccination table with status badges on BatchDetailPage
+- [x] Frontend: "Bajarildi" button on planned/overdue vaccinations
+- [x] 28/28 unit tests passed (cumulative)
+
+---
+
+## Phase 8 — Weight Sampling
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward
+
+### Verification Checklist
+
+- [x] `RecordWeightSamplingUseCase` — sample_size + total_weight → average_weight_kg
+- [x] `GetWeightHistoryUseCase` — ADG/FCR computation
+- [x] `POST /api/v1/batches/{id}/weight/`
+- [x] `GET /api/v1/batches/{id}/weight/`
+- [x] `GET /api/v1/batches/{id}/weight/metrics` — ADG, FCR
+- [x] Frontend: weight sampling form on BatchDetailPage
+- [x] Frontend: ADG/FCR metric cards
+- [x] 36/36 unit tests passed (cumulative)
+
+---
+
+## Phase 9 — Inventory Integration
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] Alembic migration: `001_initial_inventory_schema.py` (warehouses, stock_items, stock_batches, stock_movements)
+- [x] `AbstractStockRepository` + `SQLAlchemyStockRepository` implemented
+- [x] `ReceiveStockUseCase` — FIFO/FEFO ordering on receipt
+- [x] `DispatchStockUseCase` — oldest/nearest-expiry batch first
+- [x] `GetStockLevelUseCase` — current quantity per item per warehouse
+- [x] `POST /api/v1/warehouses/` — create warehouse
+- [x] `POST /api/v1/stock-items/` — create stock item
+- [x] `POST /api/v1/stock-items/{id}/receive` — receive stock batch
+- [x] `GET /api/v1/stock-items/` — list with current quantities
+- [x] `GET /api/v1/stock-items/{id}/movements` — movement history
+- [x] Frontend: InventoryPage (465 lines) — warehouse creation, stock item creation, receive stock
+- [x] Frontend: inventoryService.ts (134 lines) — API client
+- [x] Unit tests exist (test_inventory.py)
+
+**Deferred items (not blocking):** T-09-06 low-stock alert event, T-09-07 expiry alert event, T-09-08 RabbitMQ auto-dispatch consumers — all deferred per ADR-003.
+
+---
+
+## Phase 10 — Cost Tracking
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] Alembic migration: `001_initial_finance_schema.py` (expenses, farms_ref)
+- [x] `Expense` model with batch_id, expense_type (FEED/VACCINE/MEDICINE/CHICK/OTHER), amount_uzs, source_event_id
+- [x] `RecordManualExpenseUseCase` — manual expense entry
+- [x] `GetBatchCostSummaryUseCase` — totals by expense category
+- [x] `POST /api/v1/expenses/` — manual expense entry
+- [x] `GET /api/v1/expenses/batch/{id}` — expense list for batch
+- [x] `GET /api/v1/expenses/batch/{id}/cost-summary` — cost breakdown by category
+- [x] Frontend: FinancePage (590 lines) — expense recording and cost summary
+- [x] Unit tests: test_expenses.py
+
+**Deferred items (not blocking):** RabbitMQ consumers for auto-expense-creation from feed/vaccination/medication events — deferred per ADR-003.
+
+---
+
+## Phase 11 — Sales Management
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] Alembic migration: `002_add_sale_records.py` (sale_records table)
+- [x] `SaleRecord` model: batch_id, customer_name, customer_phone, quantity_kg, price_per_kg_uzs, total_revenue_uzs, payment_status, sold_at
+- [x] `RecordSaleUseCase` — validates ACTIVE or CLOSED batch
+- [x] `POST /api/v1/sales/batch/{id}` — record a sale
+- [x] `GET /api/v1/sales/batch/{id}` — list sales for batch
+- [x] Frontend: sale record form on FinancePage
+- [x] Frontend: sales list on FinancePage
+- [x] Unit tests: test_sales.py
+
+**Deferred items:** `SaleRecordedEvent` RabbitMQ publish — deferred.
+
+---
+
+## Phase 12 — Profit Analysis
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] `CalculateBatchProfitUseCase` — total_revenue − total_cost = gross_profit, profit_margin %
+- [x] `GET /api/v1/batches/{id}/profit` — profit analysis endpoint
+- [x] Frontend: profit card on FinancePage — revenue, cost, profit, margin %
+- [x] Unit tests: test_profit.py
+
+---
+
+## Phase 13 — Notifications
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] Alembic migration: `001_initial_notifications.py` (notifications table)
+- [x] `CreateNotificationUseCase`, `ListNotificationsUseCase`, `MarkAsReadUseCase`
+- [x] `SQLAlchemyNotificationRepository`
+- [x] WebSocket manager: `infrastructure/websocket/manager.py`
+- [x] WebSocket endpoint: `api/v1/endpoints/websocket.py`
+- [x] `GET /api/v1/notifications/`
+- [x] `PATCH /api/v1/notifications/{id}/read`
+- [x] Frontend: notification bell in Header with unread count
+- [x] Frontend: notification drawer via notificationService.ts (27 lines)
+- [x] Unit tests: test_notifications.py
+
+---
+
+## Phase 14 — Reporting
+
+**Status:** VERIFIED_COMPLETE  
+**Completed:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit 2026-06-17)
+
+### Verification Checklist
+
+- [x] `infrastructure/clients/livestock_client.py` — API client for livestock-service
+- [x] `infrastructure/clients/finance_client.py` — API client for finance-service
+- [x] `GenerateBatchReportUseCase` — aggregates batch data from both services
+- [x] `infrastructure/pdf/batch_report_pdf.py` — PDF generation
+- [x] `GET /api/v1/reports/batch/{id}` — on-demand JSON report
+- [x] Frontend: ReportsPage (128 lines) — farm + batch selector
+- [x] Frontend: BatchReportPage (145 lines) — report preview
+- [x] Frontend: reportService.ts (15 lines) — API client
+- [x] Unit tests: test_reports.py
+
+---
+
+## Phase 15 — MVP Stabilization
+
+**Status:** PARTIALLY_COMPLETE  
+**Completed (E2E tests):** 2026-06-17 | **Full verification pending**
+
+### Verification Checklist
+
+- [x] E2E tests: livestock, finance, and reporting service workflows (commit 448289a)
+- [ ] Performance test: report generation < 5 seconds under load
+- [ ] Security review: JWT security, OWASP Top 10 check
+- [ ] Uzbek language audit: all UI labels verified
+- [ ] Mobile responsiveness test on 360px viewport
+- [ ] Audit trail verification
+- [ ] Backup and restore test
+- [ ] User guide (Uzbek)
+- [ ] Deployment guide
+- [ ] UAT test script
+
+---
+
+## Phase 16 — Farm Management CRUD (NEW)
+
+**Status:** VERIFIED_COMPLETE  
+**Priority:** HIGH — required by new business requirement  
+**Dependencies:** P-04 VERIFIED_COMPLETE
+
+### Verification Checklist
+
+- [x] Backend: `PATCH /api/v1/farms/{id}` — edit farm (UpdateFarmUseCase, farm_repository update)
+- [x] Backend: `DELETE /api/v1/farms/{id}` — soft delete (DeleteFarmUseCase, is_active=False)
+- [x] Backend: `GET /api/v1/farms/{id}/buildings` — list buildings
+- [x] Backend: `POST /api/v1/farms/{id}/buildings` — create building (CreateBuildingUseCase)
+- [x] Backend: `GET /api/v1/buildings/{id}/sections` — list sections (buildings.py router)
+- [x] Backend: `POST /api/v1/buildings/{id}/sections` — create section (CreateSectionUseCase)
+- [x] Frontend: FarmDetailPage.tsx — buildings + sections view, inline add forms
+- [x] Frontend: FarmListPage.tsx — create farm modal, edit farm modal, delete confirmation
+- [x] Frontend: App.tsx — `/farms/:id` route added
+- [x] Fix: BN-FIX-01 RESOLVED — NewBatchPage now uses farm → building → section cascade dropdowns; UUID never typed by user
+
+---
+
+## Phase 17 — User Management UI (NEW)
+
+**Status:** NOT_STARTED  
+**Priority:** HIGH — required by new business requirement  
+**Dependencies:** P-02 VERIFIED_COMPLETE (backend already done)
+
+### Verification Checklist (for completion)
+
+- [x] Backend: `POST /api/v1/users/` — create user (DONE)
+- [x] Backend: `GET /api/v1/users/` — list users (DONE)
+- [x] Backend: `GET /api/v1/users/{id}` — get user (DONE)
+- [x] Backend: `PATCH /api/v1/users/{id}` — update user incl. is_active toggle (DONE)
+- [x] Backend: `GET /api/v1/roles/` — list roles (DONE)
+- [ ] Frontend: User Management page (`/users` route)
+- [ ] Frontend: User list table (name, email, role, status)
+- [ ] Frontend: Create user form (Uzbek labels)
+- [ ] Frontend: Edit user / role assignment
+- [ ] Frontend: Enable/disable user toggle
+- [ ] Add "Foydalanuvchilar" to Sidebar navigation
 
 ---
 
@@ -235,6 +496,8 @@ See `master_roadmap.md` for full verification checklists for each phase.
 | 2026-06-16 | phase_status.md created | ALL |
 | 2026-06-17 | Phase 2 marked VERIFIED_COMPLETE (16/16 tests) | P-02 |
 | 2026-06-17 | Phase 3 marked VERIFIED_COMPLETE (TS 0 errors, Vite build success) | P-03 |
+| 2026-06-17 | Phases 4–14 VERIFIED_COMPLETE; Phase 15 PARTIALLY_COMPLETE; P-16 and P-17 added for new requirements | P-04–P-17 |
+| 2026-06-17 | P-16 VERIFIED_COMPLETE — Farm CRUD backend + FarmDetailPage + FarmListPage + BN-FIX-01 resolved | P-16 |
 
 ---
 

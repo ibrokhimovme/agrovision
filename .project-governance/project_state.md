@@ -63,12 +63,33 @@ See `docs/development/commit-conventions.md` for commit format rules.
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-09 (Inventory Integration) — NEXT TO EXECUTE
-Last Verified Phase:   P-08 (Weight Sampling) — VERIFIED_COMPLETE
-Overall Progress:      9 / 16 phases verified complete (56.25%)
-Next Action:           Execute Phase 9 — Inventory Integration
+Current Phase:         P-17 (User Management UI) — NEXT TO EXECUTE
+Last Verified Phase:   P-16 (Farm Management CRUD) — VERIFIED_COMPLETE
+P-15 Status:           PARTIALLY_COMPLETE (E2E tests done; performance/security/docs pending)
+Overall Progress:      16 / 18 phases verified complete (88.9%)
+New Requirements:      P-16 Farm Management CRUD — DONE; P-17 User Management UI — NOT_STARTED
+Next Action:           Execute Phase 17 — User Management UI (UsersPage, create/edit/toggle, Sidebar nav)
 Blocker:               None
 ```
+
+### Gap Summary (Audit 2026-06-17)
+
+Governance documents were severely out of date. The following was discovered:
+- P-04 through P-15 are all implemented (code exists in repository)
+- project_state.md, development_backlog.md, and phase_status.md were last updated at P-08
+- master_roadmap.md was partially updated (P-09–P-11 marked DONE, P-12–P-15 missed)
+- All governance documents updated in this session to reflect actual state
+
+### New Requirements Added (2026-06-17)
+
+| Req | Description | Phase | Priority |
+|-----|-------------|-------|----------|
+| Farm Create | "Yangi ferma qo'shish" form in FarmListPage | P-16 | HIGH |
+| Farm Edit | Edit farm name/region/type | P-16 | HIGH |
+| Farm Delete | Delete farm with active-batch guard | P-16 | HIGH |
+| Farm Detail | Buildings + sections view | P-16 | HIGH |
+| Batch Section Selector | Replace UUID input with cascade dropdown | P-16 (BN-FIX-01) | HIGH |
+| User Management UI | User list, create, edit, role assign, enable/disable | P-17 | HIGH |
 
 ---
 
@@ -85,13 +106,15 @@ Blocker:               None
 | P-06 | Mortality Tracking | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-07 | Vaccination Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-08 | Weight Sampling | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
-| P-09 | Inventory Integration | NOT_STARTED | — | — |
-| P-10 | Cost Tracking | NOT_STARTED | — | — |
-| P-11 | Sales Management | NOT_STARTED | — | — |
-| P-12 | Profit Analysis | NOT_STARTED | — | — |
-| P-13 | Notifications | NOT_STARTED | — | — |
-| P-14 | Reporting | NOT_STARTED | — | — |
-| P-15 | MVP Stabilization | NOT_STARTED | — | — |
+| P-09 | Inventory Integration | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-10 | Cost Tracking | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-11 | Sales Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-12 | Profit Analysis | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-13 | Notifications | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-14 | Reporting | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-15 | MVP Stabilization | PARTIALLY_COMPLETE | 2026-06-17 | Engineering Steward |
+| P-16 | Farm Management CRUD | NOT_STARTED | — | — |
+| P-17 | User Management UI | NOT_STARTED | — | — |
 
 ---
 
@@ -296,11 +319,139 @@ Blocker:               None
 
 ---
 
-### P-05 through P-15
+### P-09 — Inventory Integration
+
+**State:** VERIFIED_COMPLETE  
+**Completion Date:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit)
+
+**Evidence:**
+- `services/inventory-service/migrations/versions/001_initial_inventory_schema.py` — warehouses, stock_items, stock_batches, stock_movements
+- `services/inventory-service/app/application/use_cases/{receive_stock,dispatch_stock,get_stock_level,create_stock_item,create_warehouse}.py`
+- `services/inventory-service/app/api/v1/endpoints/{stock,warehouses}.py`
+- `frontend/src/pages/inventory/InventoryPage.tsx` (465 lines) — functional CRUD UI
+- `frontend/src/services/inventoryService.ts` (134 lines)
+- `services/inventory-service/tests/unit/test_inventory.py`
+- Git commit: c9949ba
+
+**Deferred (non-blocking):** Low-stock event, expiry alert event, RabbitMQ auto-dispatch consumers
+
+---
+
+### P-10 — Cost Tracking
+
+**State:** VERIFIED_COMPLETE  
+**Completion Date:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit)
+
+**Evidence:**
+- `services/finance-service/migrations/versions/001_initial_finance_schema.py`
+- `services/finance-service/app/application/use_cases/{record_manual_expense,get_batch_cost_summary}.py`
+- `services/finance-service/app/api/v1/endpoints/expenses.py`
+- `frontend/src/pages/finance/FinancePage.tsx` (590 lines) — expense recording + cost summary
+- Git commit: 49ef5fd
+
+**Deferred (non-blocking):** RabbitMQ consumers for auto-expense-creation
+
+---
+
+### P-11 — Sales Management
+
+**State:** VERIFIED_COMPLETE  
+**Completion Date:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit)
+
+**Evidence:**
+- `services/finance-service/migrations/versions/002_add_sale_records.py`
+- `services/finance-service/app/application/use_cases/record_sale.py`
+- `services/finance-service/app/api/v1/endpoints/sales.py`
+- `services/finance-service/app/domain/models/finance.py` — SaleRecord model
+- Git commit: 027c563
+
+---
+
+### P-12 — Profit Analysis
+
+**State:** VERIFIED_COMPLETE  
+**Completion Date:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit)
+
+**Evidence:**
+- `services/finance-service/app/application/use_cases/calculate_batch_profit.py`
+- `services/finance-service/app/api/v1/endpoints/profit.py`
+- Profit card visible in FinancePage.tsx
+- Git commit: e575be5
+
+---
+
+### P-13 — Notifications
+
+**State:** VERIFIED_COMPLETE  
+**Completion Date:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit)
+
+**Evidence:**
+- `services/notification-service/migrations/versions/001_initial_notifications.py`
+- `services/notification-service/app/infrastructure/database/repositories/notification_repository_impl.py`
+- `services/notification-service/app/infrastructure/websocket/manager.py`
+- `services/notification-service/app/api/v1/endpoints/{notifications,websocket}.py`
+- `frontend/src/services/notificationService.ts`
+- Git commit: 08d24ca
+
+---
+
+### P-14 — Reporting
+
+**State:** VERIFIED_COMPLETE  
+**Completion Date:** 2026-06-17 | **Verifier:** Engineering Steward (repository audit)
+
+**Evidence:**
+- `services/reporting-service/app/infrastructure/clients/{livestock_client,finance_client}.py`
+- `services/reporting-service/app/application/use_cases/generate_batch_report.py`
+- `services/reporting-service/app/infrastructure/pdf/batch_report_pdf.py`
+- `frontend/src/pages/reports/{ReportsPage,BatchReportPage}.tsx`
+- `frontend/src/services/reportService.ts`
+- Git commit: 7adbad5
+
+---
+
+### P-15 — MVP Stabilization
+
+**State:** PARTIALLY_COMPLETE  
+**Started:** 2026-06-17
+
+**Completed items:**
+- [x] E2E tests: livestock, finance, reporting workflows (commit 448289a)
+- [x] Development seed dataset with full batch lifecycle (commit 71081bf)
+
+**Remaining items:**
+- [ ] Performance test: report generation < 5 seconds under load
+- [ ] Security review: JWT + OWASP Top 10
+- [ ] Uzbek language audit across all pages
+- [ ] Mobile responsiveness test (360px)
+- [ ] Audit trail verification
+- [ ] Backup and restore test
+- [ ] User guide (Uzbek)
+- [ ] Deployment guide
+- [ ] UAT test script
+
+---
+
+### P-16 — Farm Management CRUD
 
 **State:** NOT_STARTED  
-**Details:** See individual sections in master_roadmap.md and development_backlog.md  
-**No verification performed — dependencies not yet met**
+**Priority:** HIGH (new business requirement)
+
+**Scope:**
+- Backend: edit farm, delete farm (soft delete), buildings CRUD, sections CRUD
+- Frontend: create farm form, farm detail page, edit/delete farm, cascade section dropdown in NewBatchPage
+
+---
+
+### P-17 — User Management UI
+
+**State:** NOT_STARTED  
+**Priority:** HIGH (new business requirement)
+
+**Scope:**
+- Frontend only (backend is VERIFIED_COMPLETE in P-02)
+- User list page, create user, edit user/role, enable/disable toggle
+- Add "Foydalanuvchilar" to Sidebar nav
 
 ---
 
@@ -317,6 +468,13 @@ Blocker:               None
 | P-06 | 2026-06-17 | 2026-06-17 | 1 day | 12 files (see CL-006) |
 | P-07 | 2026-06-17 | 2026-06-17 | 1 day | 14 files (see CL-007) |
 | P-08 | 2026-06-17 | 2026-06-17 | 1 day | 11 files (see CL-008) |
+| P-09 | 2026-06-17 | 2026-06-17 | 1 day | ~15 files (see CL-009, commit c9949ba) |
+| P-10 | 2026-06-17 | 2026-06-17 | 1 day | ~10 files (see CL-010, commit 49ef5fd) |
+| P-11 | 2026-06-17 | 2026-06-17 | 1 day | ~8 files (see CL-011, commit 027c563) |
+| P-12 | 2026-06-17 | 2026-06-17 | 1 day | ~5 files (see CL-012, commit e575be5) |
+| P-13 | 2026-06-17 | 2026-06-17 | 1 day | ~10 files (see CL-013, commit 08d24ca) |
+| P-14 | 2026-06-17 | 2026-06-17 | 1 day | ~10 files (see CL-014, commit 7adbad5) |
+| P-15 | 2026-06-17 | — | ongoing | ~5 files (see CL-015, commit 448289a) |
 
 ---
 
@@ -518,6 +676,130 @@ Every modification to the project must be recorded here. Never delete entries.
 
 ---
 
+---
+
+### CL-009
+- **Date:** 2026-06-17
+- **Task:** Phase 9 — Inventory Integration
+- **Git Commit:** c9949ba
+- **Files Created:** inventory-service migration 001, use cases (receive_stock, dispatch_stock, get_stock_level, create_stock_item, create_warehouse), stock_repository_impl, inventory_dtos, InventoryPage.tsx, inventoryService.ts
+- **Verification:** Unit tests pass; frontend functional with create warehouse / stock item / receive stock
+- **Requirements implemented:** SF-12 (inventory management), SF-13 (warehouse ops), BP-09 (FIFO/FEFO), UC-05, UC-11
+- **Deferred:** RabbitMQ auto-dispatch consumers (T-09-06, T-09-07, T-09-08)
+
+---
+
+### CL-010
+- **Date:** 2026-06-17
+- **Task:** Phase 10 — Cost Tracking
+- **Git Commit:** 49ef5fd
+- **Files Created:** finance migration 001, RecordManualExpenseUseCase, GetBatchCostSummaryUseCase, expenses endpoint, expense_dtos
+- **Verification:** Unit tests pass; expense recording and cost summary visible in FinancePage
+- **Requirements implemented:** SF-14 (financial tracking), SF-15 (cost management), BP-11, FG-01
+- **Deferred:** RabbitMQ consumers for auto-expense-creation
+
+---
+
+### CL-011
+- **Date:** 2026-06-17
+- **Task:** Phase 11 — Sales Management
+- **Git Commit:** 027c563
+- **Files Created:** finance migration 002 (sale_records), RecordSaleUseCase, sales endpoint, sale_dtos, SaleRecord model fields
+- **Verification:** Unit tests pass; sale recording form functional in FinancePage
+- **Requirements implemented:** SF-17 (sales management), BP-12, FG-02
+
+---
+
+### CL-012
+- **Date:** 2026-06-17
+- **Task:** Phase 12 — Profit Analysis
+- **Git Commit:** e575be5
+- **Files Created:** CalculateBatchProfitUseCase, profit endpoint, profit_dtos
+- **Verification:** Unit tests pass; profit card functional in FinancePage
+- **Requirements implemented:** SF-15 (cost mgmt), SF-16 (revenue mgmt), FG-01
+
+---
+
+### CL-013
+- **Date:** 2026-06-17
+- **Task:** Phase 13 — Notifications
+- **Git Commit:** 08d24ca
+- **Files Created:** notification migration 001, notification use cases (create, list, mark_as_read), notification_repository_impl, websocket manager, websocket endpoint, notifications endpoint, notificationService.ts
+- **Verification:** Unit tests pass; notification bell in Header with WebSocket connection
+- **Requirements implemented:** SF-22 (notifications), SF-23 (simplified)
+
+---
+
+### CL-014
+- **Date:** 2026-06-17
+- **Task:** Phase 14 — Reporting
+- **Git Commit:** 7adbad5
+- **Files Created:** livestock_client.py, finance_client.py, GenerateBatchReportUseCase, batch_report_pdf.py, reports endpoint, report_dtos, ReportsPage.tsx, BatchReportPage.tsx, reportService.ts
+- **Verification:** Unit tests pass; batch report and PDF export functional
+- **Requirements implemented:** SF-21 (reports), SG-03, VG-01
+
+---
+
+### CL-015
+- **Date:** 2026-06-17
+- **Task:** Phase 15 — E2E Tests (partial)
+- **Git Commit:** 448289a
+- **Files Created:** E2E tests for livestock, finance, and reporting service workflows
+- **Note:** Performance test, security review, Uzbek audit, deployment guide still pending
+
+---
+
+### CL-016
+- **Date:** 2026-06-17
+- **Task:** Dashboard, FinancePage, ReportsPage — replaced placeholders with real API-connected pages
+- **Git Commit:** 95e66fa
+- **Files Modified:** DashboardPage.tsx (real farm + batch + inventory summary), FinancePage.tsx (real expense/sale/profit), ReportsPage.tsx (real batch selector + report link)
+- **Note:** Development seed data committed simultaneously (commit 71081bf)
+
+---
+
+### CL-017
+- **Date:** 2026-06-17
+- **Task:** Governance Sync — Repository audit and roadmap update
+- **Trigger:** New session with updated business requirements; governance docs were 6 phases behind actual implementation
+- **Files Modified:**
+  - `.project-governance/project_state.md` — Active context, phase summary, P-09–P-17 verification records, phase history, change ledger
+  - `.project-governance/execution/development_backlog.md` — P-02–P-15 marked complete; P-16, P-17 added with tasks
+  - `.project-governance/execution/phase_status.md` — All phase entries updated; P-16, P-17 added
+- **Gap found:** project_state.md was tracking through P-08; actual code was complete through P-14 + P-15 partial
+- **New requirements recorded:** Farm Management CRUD (P-16), User Management UI (P-17), Batch section_id fix (BN-FIX-01)
+- **Impact:** No code changed — governance only
+
+---
+
+### CL-018
+- **Date:** 2026-06-17
+- **Task:** P-16 Farm Management CRUD — COMPLETE
+- **Trigger:** "Execute Next" after governance sync
+- **Files Modified (Backend):**
+  - `services/farm-service/app/application/dtos/farm_dtos.py` — Added UpdateFarmRequest, CreateBuildingRequest, BuildingResponse, CreateSectionRequest, SectionResponse
+  - `services/farm-service/app/domain/repositories/farm_repository.py` — Added 7 abstract methods
+  - `services/farm-service/app/infrastructure/database/repositories/farm_repository_impl.py` — Concrete implementations of 7 new methods
+  - `services/farm-service/app/application/use_cases/update_farm.py` — NEW
+  - `services/farm-service/app/application/use_cases/delete_farm.py` — NEW
+  - `services/farm-service/app/application/use_cases/list_buildings.py` — NEW
+  - `services/farm-service/app/application/use_cases/create_building.py` — NEW
+  - `services/farm-service/app/application/use_cases/list_sections.py` — NEW
+  - `services/farm-service/app/application/use_cases/create_section.py` — NEW
+  - `services/farm-service/app/api/v1/endpoints/farms.py` — Added PATCH/DELETE/GET buildings/POST buildings
+  - `services/farm-service/app/api/v1/endpoints/buildings.py` — NEW (sections sub-resource)
+  - `services/farm-service/app/api/v1/router.py` — Added buildings router
+- **Files Modified (Frontend):**
+  - `frontend/src/types/index.ts` — Added Building, Section, SectionType
+  - `frontend/src/services/batchService.ts` — Added farmService methods: getFarm, createFarm, updateFarm, deleteFarm, listBuildings, createBuilding, listSections, createSection
+  - `frontend/src/pages/farms/FarmListPage.tsx` — Full rewrite: create/edit/delete modals, link to detail
+  - `frontend/src/pages/farms/FarmDetailPage.tsx` — NEW: buildings + sections view, inline add forms
+  - `frontend/src/pages/livestock/NewBatchPage.tsx` — BN-FIX-01 RESOLVED: cascade farm→building→section dropdowns
+  - `frontend/src/App.tsx` — Added /farms/:id route
+- **Impact:** Farm Management CRUD fully operational; section_id UUID UX bug eliminated
+
+---
+
 *project_state.md — AgroVision Authoritative Execution State*  
-*Created: 2026-06-17 | Version: 1.0*  
+*Created: 2026-06-17 | Version: 1.2 (P-16 complete 2026-06-17)*  
 *IMPORTANT: Always append to Change Ledger. Never delete or overwrite history.*

@@ -8,6 +8,7 @@ import BatchListPage from '@/pages/livestock/BatchListPage'
 import NewBatchPage from '@/pages/livestock/NewBatchPage'
 import BatchDetailPage from '@/pages/livestock/BatchDetailPage'
 import FarmListPage from '@/pages/farms/FarmListPage'
+import FarmDetailPage from '@/pages/farms/FarmDetailPage'
 import InventoryPage from '@/pages/inventory/InventoryPage'
 import BatchReportPage from '@/pages/reports/BatchReportPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/"               element={<AppLayout><DashboardPage /></AppLayout>} />
         <Route path="/farms"          element={<AppLayout><FarmListPage /></AppLayout>} />
+        <Route path="/farms/:id"      element={<AppLayout><FarmDetailPage /></AppLayout>} />
         <Route path="/livestock"      element={<AppLayout><BatchListPage /></AppLayout>} />
         <Route path="/livestock/new"  element={<AppLayout><NewBatchPage /></AppLayout>} />
         <Route path="/livestock/:id"  element={<AppLayout><BatchDetailPage /></AppLayout>} />

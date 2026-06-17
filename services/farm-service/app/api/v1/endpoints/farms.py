@@ -9,10 +9,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.dtos.farm_dtos import CreateFarmRequest, FarmResponse
+from app.application.dtos.farm_dtos import (
+    CreateFarmRequest,
+    UpdateFarmRequest,
+    FarmResponse,
+    CreateBuildingRequest,
+    BuildingResponse,
+)
 from app.application.use_cases.create_farm import CreateFarmUseCase
 from app.application.use_cases.get_farm import GetFarmUseCase
 from app.application.use_cases.list_farms import ListFarmsUseCase
+from app.application.use_cases.update_farm import UpdateFarmUseCase
+from app.application.use_cases.delete_farm import DeleteFarmUseCase
+from app.application.use_cases.list_buildings import ListBuildingsUseCase
+from app.application.use_cases.create_building import CreateBuildingUseCase
 from app.infrastructure.database.repositories.farm_repository_impl import SQLAlchemyFarmRepository
 from app.infrastructure.database.session import get_db
 from shared.contracts.api_standards import APIResponse, PaginatedResponse, PaginationMeta
@@ -67,3 +77,48 @@ async def get_farm(
     use_case = GetFarmUseCase(repo)
     farm = await use_case.execute(farm_id)
     return APIResponse(data=FarmResponse.model_validate(farm))
+
+
+@router.patch("/{farm_id}", response_model=APIResponse[FarmResponse])
+async def update_farm(
+    farm_id: UUID,
+    body: UpdateFarmRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = SQLAlchemyFarmRepository(db)
+    use_case = UpdateFarmUseCase(repo)
+    farm = await use_case.execute(farm_id, body)
+    return APIResponse(data=FarmResponse.model_validate(farm))
+
+
+@router.delete("/{farm_id}", status_code=204)
+async def delete_farm(
+    farm_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = SQLAlchemyFarmRepository(db)
+    use_case = DeleteFarmUseCase(repo)
+    await use_case.execute(farm_id)
+
+
+@router.get("/{farm_id}/buildings", response_model=APIResponse[list[BuildingResponse]])
+async def list_buildings(
+    farm_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = SQLAlchemyFarmRepository(db)
+    use_case = ListBuildingsUseCase(repo)
+    buildings = await use_case.execute(farm_id)
+    return APIResponse(data=[BuildingResponse.model_validate(b) for b in buildings])
+
+
+@router.post("/{farm_id}/buildings", response_model=APIResponse[BuildingResponse], status_code=201)
+async def create_building(
+    farm_id: UUID,
+    body: CreateBuildingRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = SQLAlchemyFarmRepository(db)
+    use_case = CreateBuildingUseCase(repo)
+    building = await use_case.execute(farm_id, body)
+    return APIResponse(data=BuildingResponse.model_validate(building))

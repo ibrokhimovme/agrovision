@@ -4,11 +4,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { batchService, farmService } from '@/services/batchService'
-import type { Farm } from '@/types'
+import type { Farm, Building, Section } from '@/types'
 
 const schema = z.object({
   farm_id: z.string().min(1, "Ferma tanlang"),
-  section_id: z.string().uuid("Noto'g'ri UUID format"),
+  section_id: z.string().min(1, "Bo'lim tanlang"),
   species: z.enum(['broiler', 'layer']),
   initial_count: z.coerce.number().int().min(1, "Kamida 1 ta qush kerak"),
   placement_date: z.string().min(1, "Sana kiritilsin"),
@@ -23,12 +23,19 @@ type FormData = z.infer<typeof schema>
 export default function NewBatchPage() {
   const navigate = useNavigate()
   const [farms, setFarms] = useState<Farm[]>([])
+  const [buildings, setBuildings] = useState<Building[]>([])
+  const [sections, setSections] = useState<Section[]>([])
+  const [selectedBuildingId, setSelectedBuildingId] = useState('')
+  const [loadingBuildings, setLoadingBuildings] = useState(false)
+  const [loadingSections, setLoadingSections] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -39,9 +46,44 @@ export default function NewBatchPage() {
     },
   })
 
+  const watchedFarmId = watch('farm_id')
+
   useEffect(() => {
     farmService.listFarms().then((res) => setFarms(res.data)).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!watchedFarmId) {
+      setBuildings([])
+      setSections([])
+      setSelectedBuildingId('')
+      setValue('section_id', '')
+      return
+    }
+    setLoadingBuildings(true)
+    setBuildings([])
+    setSections([])
+    setSelectedBuildingId('')
+    setValue('section_id', '')
+    farmService
+      .listBuildings(watchedFarmId)
+      .then((res) => setBuildings(res.data))
+      .catch(() => {})
+      .finally(() => setLoadingBuildings(false))
+  }, [watchedFarmId, setValue])
+
+  const handleBuildingChange = (buildingId: string) => {
+    setSelectedBuildingId(buildingId)
+    setSections([])
+    setValue('section_id', '')
+    if (!buildingId) return
+    setLoadingSections(true)
+    farmService
+      .listSections(buildingId)
+      .then((res) => setSections(res.data))
+      .catch(() => {})
+      .finally(() => setLoadingSections(false))
+  }
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true)
@@ -107,21 +149,64 @@ export default function NewBatchPage() {
           )}
         </div>
 
-        {/* Section ID */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Bo'lim ID (UUID) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            {...register('section_id')}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
-          />
-          {errors.section_id && (
-            <p className="text-red-500 text-xs mt-1">{errors.section_id.message}</p>
-          )}
-        </div>
+        {/* Building — appears after farm selected */}
+        {watchedFarmId && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bino <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={selectedBuildingId}
+              onChange={(e) => handleBuildingChange(e.target.value)}
+              disabled={loadingBuildings}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-50"
+            >
+              <option value="">
+                {loadingBuildings ? 'Yuklanmoqda...' : buildings.length === 0 ? "Binolar yo'q — avval ferma sahifasida bino qo'shing" : 'Binoni tanlang'}
+              </option>
+              {buildings.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                  {b.capacity ? ` (${b.capacity.toLocaleString()} bosh)` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Section — appears after building selected */}
+        {selectedBuildingId && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bo'lim <span className="text-red-500">*</span>
+            </label>
+            <select
+              {...register('section_id')}
+              disabled={loadingSections}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-50"
+            >
+              <option value="">
+                {loadingSections ? 'Yuklanmoqda...' : sections.length === 0 ? "Bo'limlar yo'q — binoga bo'lim qo'shing" : "Bo'limni tanlang"}
+              </option>
+              {sections.filter((s) => s.is_active).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.section_type === 'quarantine'
+                    ? ' — Karantin'
+                    : s.section_type === 'isolation'
+                    ? ' — Izolyatsiya'
+                    : s.section_type === 'storage'
+                    ? ' — Saqlash'
+                    : ''}
+                  {s.capacity ? ` (${s.capacity.toLocaleString()} bosh)` : ''}
+                </option>
+              ))}
+            </select>
+            {errors.section_id && (
+              <p className="text-red-500 text-xs mt-1">{errors.section_id.message}</p>
+            )}
+          </div>
+        )}
 
         {/* Species */}
         <div>

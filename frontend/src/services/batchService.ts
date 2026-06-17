@@ -4,6 +4,10 @@ import type {
   PaginatedResponse,
   Batch,
   Farm,
+  Building,
+  Section,
+  FarmType,
+  SectionType,
   BatchStatus,
   BatchCloseReason,
   PoultrySpecies,
@@ -24,6 +28,34 @@ import type {
   SalePaymentStatus,
   BatchProfit,
 } from '@/types'
+
+export interface CreateFarmPayload {
+  name: string
+  farm_type: FarmType
+  address?: string
+  region?: string
+  notes?: string
+}
+
+export interface UpdateFarmPayload {
+  name?: string
+  farm_type?: FarmType
+  address?: string
+  region?: string
+  notes?: string
+}
+
+export interface CreateBuildingPayload {
+  name: string
+  capacity?: number
+  notes?: string
+}
+
+export interface CreateSectionPayload {
+  name: string
+  section_type: SectionType
+  capacity?: number
+}
 
 export interface CreateBatchPayload {
   farm_id: string
@@ -124,6 +156,45 @@ export const farmService = {
     const resp = await apiClient.get<PaginatedResponse<Farm>>('/farms/', {
       params: { page, page_size },
     })
+    return resp.data
+  },
+
+  async getFarm(farmId: string): Promise<APIResponse<Farm>> {
+    const resp = await apiClient.get<APIResponse<Farm>>(`/farms/${farmId}`)
+    return resp.data
+  },
+
+  async createFarm(payload: CreateFarmPayload): Promise<APIResponse<Farm>> {
+    const resp = await apiClient.post<APIResponse<Farm>>('/farms/', payload)
+    return resp.data
+  },
+
+  async updateFarm(farmId: string, payload: UpdateFarmPayload): Promise<APIResponse<Farm>> {
+    const resp = await apiClient.patch<APIResponse<Farm>>(`/farms/${farmId}`, payload)
+    return resp.data
+  },
+
+  async deleteFarm(farmId: string): Promise<void> {
+    await apiClient.delete(`/farms/${farmId}`)
+  },
+
+  async listBuildings(farmId: string): Promise<APIResponse<Building[]>> {
+    const resp = await apiClient.get<APIResponse<Building[]>>(`/farms/${farmId}/buildings`)
+    return resp.data
+  },
+
+  async createBuilding(farmId: string, payload: CreateBuildingPayload): Promise<APIResponse<Building>> {
+    const resp = await apiClient.post<APIResponse<Building>>(`/farms/${farmId}/buildings`, payload)
+    return resp.data
+  },
+
+  async listSections(buildingId: string): Promise<APIResponse<Section[]>> {
+    const resp = await apiClient.get<APIResponse<Section[]>>(`/buildings/${buildingId}/sections`)
+    return resp.data
+  },
+
+  async createSection(buildingId: string, payload: CreateSectionPayload): Promise<APIResponse<Section>> {
+    const resp = await apiClient.post<APIResponse<Section>>(`/buildings/${buildingId}/sections`, payload)
     return resp.data
   },
 }

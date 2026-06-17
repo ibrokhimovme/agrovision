@@ -56,6 +56,7 @@ export interface UserProfile {
 // ── Farm ──────────────────────────────────────────────────────────────────────
 
 export type FarmType = 'poultry' | 'livestock' | 'dairy' | 'mixed';
+export type SectionType = 'quarantine' | 'production' | 'isolation' | 'storage';
 
 export interface Farm {
   id: string;
@@ -67,6 +68,25 @@ export interface Farm {
   is_active: boolean;
   notes?: string;
   created_at: string;
+}
+
+export interface Building {
+  id: string;
+  farm_id: string;
+  name: string;
+  capacity?: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface Section {
+  id: string;
+  building_id: string;
+  farm_id: string;
+  name: string;
+  section_type: SectionType;
+  capacity?: number;
+  is_active: boolean;
 }
 
 // ── Livestock / Batches ───────────────────────────────────────────────────────
