@@ -1,6 +1,6 @@
 """
 AgroVision Reporting Service
-Report generation, KPI aggregation, PDF/Excel/CSV export. SRS §5.22, BRD §3.1 SG-03.
+Report generation, KPI aggregation, PDF export. SRS §5.21, BRD §3.1 SG-03.
 """
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.exceptions import register_exception_handlers
 from app.api.v1.router import router as v1_router
 
 logger = logging.getLogger(__name__)
@@ -19,15 +20,13 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s...", settings.SERVICE_NAME)
-    # TODO: initialise DB pool, RabbitMQ connection, Redis pool here
     yield
     logger.info("Shutting down %s...", settings.SERVICE_NAME)
-    # TODO: close DB pool, RabbitMQ connection, Redis pool here
 
 
 app = FastAPI(
     title="AgroVision Reporting Service",
-    description="Report generation, KPI aggregation, PDF/Excel/CSV export. SRS §5.22, BRD §3.1 SG-03.",
+    description="Report generation, KPI aggregation, PDF export. SRS §5.21, BRD §3.1 SG-03.",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -43,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_exception_handlers(app)
 app.include_router(v1_router, prefix="/api/v1")
 
 

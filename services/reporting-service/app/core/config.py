@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # RabbitMQ
     RABBITMQ_URL: str = "amqp://agrovision:agrovision@localhost:5672/agrovision"
 
+    # Upstream service URLs (direct service-to-service, not through gateway)
+    LIVESTOCK_SERVICE_URL: str = "http://livestock-service:8003"
+    FINANCE_SERVICE_URL: str = "http://finance-service:8005"
+
     # JWT (public key / secret for token verification)
     JWT_SECRET_KEY: str = "changeme"
     JWT_ALGORITHM: str = "HS256"

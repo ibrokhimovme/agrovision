@@ -231,6 +231,35 @@ export interface BatchProfit {
   expense_count: number
 }
 
+// ── Reports ───────────────────────────────────────────────────────────────────
+
+export interface BatchReport {
+  batch_id: string
+  generated_at: string
+  batch_code: string | null
+  farm_id: string
+  species: string
+  initial_count: number
+  current_count: number
+  status: string
+  placement_date: string
+  age_days: number | null
+  fcr: number | null
+  adg_grams: number | null
+  latest_avg_weight_kg: number | null
+  total_feed_kg: number | null
+  total_water_liters: number | null
+  total_deaths: number | null
+  mortality_rate_pct: number | null
+  survival_rate_pct: number | null
+  total_cost_uzs: number | null
+  total_revenue_uzs: number | null
+  gross_profit_uzs: number | null
+  profit_margin_pct: number | null
+  sale_count: number | null
+  expense_count: number | null
+}
+
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 export type ItemType = 'feed' | 'vaccine' | 'medicine' | 'equipment' | 'packaging' | 'other';

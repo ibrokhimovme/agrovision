@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements-base.txt
 COPY shared/ ./shared/
 COPY services/reporting-service/ ./
 
+RUN pip install --no-cache-dir -r requirements.txt
+
 ENV PYTHONPATH=/app
 
 EXPOSE 8007

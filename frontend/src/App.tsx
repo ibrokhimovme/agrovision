@@ -9,6 +9,7 @@ import NewBatchPage from '@/pages/livestock/NewBatchPage'
 import BatchDetailPage from '@/pages/livestock/BatchDetailPage'
 import FarmListPage from '@/pages/farms/FarmListPage'
 import InventoryPage from '@/pages/inventory/InventoryPage'
+import BatchReportPage from '@/pages/reports/BatchReportPage'
 
 const DashboardPage  = () => <div className="text-gray-600">Bosh sahifa — tez orada</div>
 const FinancePage    = () => <div className="text-gray-600">Moliya — tez orada</div>
@@ -39,9 +40,10 @@ export default function App() {
         <Route path="/livestock"      element={<AppLayout><BatchListPage /></AppLayout>} />
         <Route path="/livestock/new"  element={<AppLayout><NewBatchPage /></AppLayout>} />
         <Route path="/livestock/:id"  element={<AppLayout><BatchDetailPage /></AppLayout>} />
-        <Route path="/inventory"      element={<AppLayout><InventoryPage /></AppLayout>} />
-        <Route path="/finance"        element={<AppLayout><FinancePage /></AppLayout>} />
-        <Route path="/reports"        element={<AppLayout><ReportsPage /></AppLayout>} />
+        <Route path="/inventory"          element={<AppLayout><InventoryPage /></AppLayout>} />
+        <Route path="/finance"            element={<AppLayout><FinancePage /></AppLayout>} />
+        <Route path="/reports"            element={<AppLayout><ReportsPage /></AppLayout>} />
+        <Route path="/reports/batch/:id"  element={<AppLayout><BatchReportPage /></AppLayout>} />
         <Route path="*"               element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
