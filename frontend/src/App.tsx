@@ -10,11 +10,11 @@ import BatchDetailPage from '@/pages/livestock/BatchDetailPage'
 import FarmListPage from '@/pages/farms/FarmListPage'
 import InventoryPage from '@/pages/inventory/InventoryPage'
 import BatchReportPage from '@/pages/reports/BatchReportPage'
+import DashboardPage from '@/pages/dashboard/DashboardPage'
+import FinancePage from '@/pages/finance/FinancePage'
+import ReportsPage from '@/pages/reports/ReportsPage'
 
-const DashboardPage  = () => <div className="text-gray-600">Bosh sahifa — tez orada</div>
-const FinancePage    = () => <div className="text-gray-600">Moliya — tez orada</div>
-const ReportsPage    = () => <div className="text-gray-600">Hisobotlar — tez orada</div>
-const NotFoundPage   = () => <div className="text-gray-600">404 — Sahifa topilmadi</div>
+const NotFoundPage = () => <div className="p-6 text-gray-600">404 — Sahifa topilmadi</div>
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
