@@ -120,6 +120,30 @@ export interface MortalitySummary {
   cause_breakdown: Record<string, number>;
 }
 
+// ── Weight Sampling ───────────────────────────────────────────────────────────
+
+export interface WeightSampling {
+  id: string;
+  batch_id: string;
+  farm_id: string;
+  sample_size: number;
+  average_weight_kg: number;
+  total_sample_weight_kg?: number;
+  age_days?: number;
+  measured_at: string;
+  notes?: string;
+}
+
+export interface GrowthMetrics {
+  batch_id: string;
+  sampling_count: number;
+  latest_avg_weight_kg?: number;
+  age_days?: number;
+  adg_kg?: number;
+  total_feed_kg?: number;
+  fcr?: number;
+}
+
 // ── Vaccination ───────────────────────────────────────────────────────────────
 
 export type VaccinationStatus = 'planned' | 'completed' | 'skipped' | 'overdue';

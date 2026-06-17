@@ -13,6 +13,8 @@ import type {
   MortalitySummary,
   VaccinationRecord,
   VaccinationSchedule,
+  WeightSampling,
+  GrowthMetrics,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -189,6 +191,32 @@ export const vaccinationService = {
 
   async completeVaccination(recordId: string, payload: RecordVaccinationPayload): Promise<APIResponse<VaccinationRecord>> {
     const resp = await apiClient.patch<APIResponse<VaccinationRecord>>(`/vaccinations/${recordId}/complete`, payload)
+    return resp.data
+  },
+}
+
+export interface RecordWeightPayload {
+  farm_id: string
+  sample_size: number
+  total_sample_weight_kg: number
+  notes?: string
+}
+
+export const weightService = {
+  async recordWeight(batchId: string, payload: RecordWeightPayload): Promise<APIResponse<WeightSampling>> {
+    const resp = await apiClient.post<APIResponse<WeightSampling>>(`/batches/${batchId}/weight/`, payload)
+    return resp.data
+  },
+
+  async listWeight(batchId: string, page = 1, page_size = 20): Promise<PaginatedResponse<WeightSampling>> {
+    const resp = await apiClient.get<PaginatedResponse<WeightSampling>>(`/batches/${batchId}/weight/`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+
+  async getMetrics(batchId: string): Promise<APIResponse<GrowthMetrics>> {
+    const resp = await apiClient.get<APIResponse<GrowthMetrics>>(`/batches/${batchId}/weight/metrics`)
     return resp.data
   },
 }

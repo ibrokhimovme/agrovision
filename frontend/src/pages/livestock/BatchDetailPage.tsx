@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, feedService, mortalityService, vaccinationService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, FeedRecord, FeedSummary, MortalityRecord, MortalitySummary, VaccinationRecord } from '@/types'
+import { batchService, feedService, mortalityService, vaccinationService, weightService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, VaccinationRecord, WeightSampling } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -61,6 +61,14 @@ export default function BatchDetailPage() {
   const [mortQty, setMortQty] = useState('')
   const [mortCause, setMortCause] = useState('')
 
+  // Weight state
+  const [weightRecords, setWeightRecords] = useState<WeightSampling[]>([])
+  const [growthMetrics, setGrowthMetrics] = useState<GrowthMetrics | null>(null)
+  const [weightLoading, setWeightLoading] = useState(false)
+  const [weightError, setWeightError] = useState<string | null>(null)
+  const [sampleSize, setSampleSize] = useState('')
+  const [totalWeight, setTotalWeight] = useState('')
+
   // Vaccination state
   const [vaccRecords, setVaccRecords] = useState<VaccinationRecord[]>([])
   const [vaccLoading, setVaccLoading] = useState(false)
@@ -90,13 +98,40 @@ export default function BatchDetailPage() {
     vaccinationService.listVaccinations(batchId, 1, 50).then((res) => setVaccRecords(res.data)).catch(() => {})
   }
 
+  const loadWeightData = (batchId: string) => {
+    weightService.listWeight(batchId, 1, 20).then((res) => setWeightRecords(res.data)).catch(() => {})
+    weightService.getMetrics(batchId).then((res) => setGrowthMetrics(res.data)).catch(() => {})
+  }
+
   useEffect(() => {
     if (id && batch?.status === 'active') {
       loadFeedData(id)
       loadMortalityData(id)
       loadVaccinations(id)
+      loadWeightData(id)
     }
   }, [id, batch?.status])
+
+  const handleRecordWeight = async () => {
+    if (!id || !batch || !sampleSize || !totalWeight) return
+    setWeightLoading(true)
+    setWeightError(null)
+    try {
+      await weightService.recordWeight(id, {
+        farm_id: batch.farm_id,
+        sample_size: parseInt(sampleSize),
+        total_sample_weight_kg: parseFloat(totalWeight),
+      })
+      setSampleSize('')
+      setTotalWeight('')
+      loadWeightData(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setWeightError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setWeightLoading(false)
+    }
+  }
 
   const handleCompleteVaccination = async (recordId: string) => {
     if (!id) return
@@ -406,6 +441,113 @@ export default function BatchDetailPage() {
                         </td>
                         <td className="px-4 py-3 text-right font-medium text-red-700">{r.quantity}</td>
                         <td className="px-4 py-3 text-gray-600">{r.cause_category ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Weight Sampling Section */}
+      {batch.status === 'active' && (
+        <div className="space-y-4 mb-6">
+          {growthMetrics && growthMetrics.sampling_count > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <SummaryCard
+                label="O'rtacha og'irlik"
+                value={`${Number(growthMetrics.latest_avg_weight_kg).toFixed(3)} kg`}
+              />
+              <SummaryCard
+                label="Yosh (kun)"
+                value={String(growthMetrics.age_days ?? '—')}
+              />
+              {growthMetrics.adg_kg != null && (
+                <SummaryCard
+                  label="Kunlik o'sish (ADG)"
+                  value={`${(Number(growthMetrics.adg_kg) * 1000).toFixed(1)} g`}
+                />
+              )}
+              {growthMetrics.fcr != null && (
+                <SummaryCard label="FCR" value={Number(growthMetrics.fcr).toFixed(3)} />
+              )}
+            </div>
+          )}
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Og'irlik o'lchovi</h2>
+            {weightError && (
+              <div className="text-red-600 text-sm mb-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {weightError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Namunadagi qushlar soni *</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="masalan: 50"
+                  value={sampleSize}
+                  onChange={(e) => setSampleSize(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Umumiy namuna og'irligi (kg) *</label>
+                <input
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  placeholder="masalan: 75.500"
+                  value={totalWeight}
+                  onChange={(e) => setTotalWeight(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+            </div>
+            {sampleSize && totalWeight && (
+              <p className="text-xs text-gray-500 mb-3">
+                O'rtacha: {(parseFloat(totalWeight) / parseInt(sampleSize)).toFixed(3)} kg/qush
+              </p>
+            )}
+            <button
+              onClick={handleRecordWeight}
+              disabled={weightLoading || !sampleSize || !totalWeight}
+              className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {weightLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+
+          {weightRecords.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900">O'lchov tarixi</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Sana</th>
+                      <th className="px-4 py-3 text-right">Yosh (kun)</th>
+                      <th className="px-4 py-3 text-right">O'rt. og'irlik (kg)</th>
+                      <th className="px-4 py-3 text-right">Namuna</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {weightRecords.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-700">
+                          {new Date(r.measured_at).toLocaleDateString('uz-UZ')}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">{r.age_days ?? '—'}</td>
+                        <td className="px-4 py-3 text-right font-medium text-green-700">
+                          {Number(r.average_weight_kg).toFixed(3)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">{r.sample_size}</td>
                       </tr>
                     ))}
                   </tbody>
