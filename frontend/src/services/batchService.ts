@@ -7,6 +7,8 @@ import type {
   BatchStatus,
   BatchCloseReason,
   PoultrySpecies,
+  FeedRecord,
+  FeedSummary,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -70,6 +72,35 @@ export const batchService = {
 
   async closeBatch(id: string, payload: CloseBatchPayload): Promise<APIResponse<Batch>> {
     const resp = await apiClient.post<APIResponse<Batch>>(`/batches/${id}/close`, payload)
+    return resp.data
+  },
+}
+
+export interface RecordFeedPayload {
+  farm_id: string
+  feed_date: string
+  quantity_kg: number
+  water_liters?: number
+  feed_type?: string
+  age_days?: number
+  notes?: string
+}
+
+export const feedService = {
+  async recordFeed(batchId: string, payload: RecordFeedPayload): Promise<APIResponse<FeedRecord>> {
+    const resp = await apiClient.post<APIResponse<FeedRecord>>(`/batches/${batchId}/feed`, payload)
+    return resp.data
+  },
+
+  async listFeed(batchId: string, page = 1, page_size = 20): Promise<PaginatedResponse<FeedRecord>> {
+    const resp = await apiClient.get<PaginatedResponse<FeedRecord>>(`/batches/${batchId}/feed`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+
+  async getFeedSummary(batchId: string): Promise<APIResponse<FeedSummary>> {
+    const resp = await apiClient.get<APIResponse<FeedSummary>>(`/batches/${batchId}/feed/summary`)
     return resp.data
   },
 }

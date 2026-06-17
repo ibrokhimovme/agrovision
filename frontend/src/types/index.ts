@@ -98,6 +98,28 @@ export interface Batch {
   updated_at: string;
 }
 
+// ── Feed Consumption ──────────────────────────────────────────────────────────
+
+export interface FeedRecord {
+  id: string;
+  batch_id: string;
+  farm_id: string;
+  feed_date: string;
+  feed_type?: string;
+  quantity_kg: number;
+  water_liters?: number;
+  age_days?: number;
+  notes?: string;
+}
+
+export interface FeedSummary {
+  batch_id: string;
+  total_feed_kg: number;
+  total_water_liters?: number;
+  record_count: number;
+  fcr?: number;
+}
+
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 export type ItemType = 'feed' | 'vaccine' | 'medicine' | 'equipment' | 'packaging' | 'other';

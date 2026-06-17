@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService } from '@/services/batchService'
-import type { Batch, BatchCloseReason } from '@/types'
+import { batchService, feedService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, FeedRecord, FeedSummary } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -30,6 +30,8 @@ const CLOSE_REASON_LABELS: Record<string, string> = {
 
 const CLOSE_REASONS: BatchCloseReason[] = ['sale', 'slaughter', 'transfer', 'disease', 'other']
 
+const today = () => new Date().toISOString().slice(0, 10)
+
 export default function BatchDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [batch, setBatch] = useState<Batch | null>(null)
@@ -40,6 +42,16 @@ export default function BatchDetailPage() {
   const [showCloseModal, setShowCloseModal] = useState(false)
   const [closeReason, setCloseReason] = useState<BatchCloseReason>('sale')
 
+  // Feed state
+  const [feedRecords, setFeedRecords] = useState<FeedRecord[]>([])
+  const [feedSummary, setFeedSummary] = useState<FeedSummary | null>(null)
+  const [feedLoading, setFeedLoading] = useState(false)
+  const [feedError, setFeedError] = useState<string | null>(null)
+  const [feedDate, setFeedDate] = useState(today())
+  const [feedQty, setFeedQty] = useState('')
+  const [waterQty, setWaterQty] = useState('')
+  const [feedType, setFeedType] = useState('')
+
   useEffect(() => {
     if (!id) return
     batchService
@@ -48,6 +60,40 @@ export default function BatchDetailPage() {
       .catch(() => setError("Partiya topilmadi yoki xatolik yuz berdi."))
       .finally(() => setLoading(false))
   }, [id])
+
+  const loadFeedData = (batchId: string) => {
+    feedService.listFeed(batchId, 1, 20).then((res) => setFeedRecords(res.data)).catch(() => {})
+    feedService.getFeedSummary(batchId).then((res) => setFeedSummary(res.data)).catch(() => {})
+  }
+
+  useEffect(() => {
+    if (id && batch?.status === 'active') loadFeedData(id)
+  }, [id, batch?.status])
+
+  const handleRecordFeed = async () => {
+    if (!id || !batch || !feedQty) return
+    setFeedLoading(true)
+    setFeedError(null)
+    try {
+      await feedService.recordFeed(id, {
+        farm_id: batch.farm_id,
+        feed_date: feedDate,
+        quantity_kg: parseFloat(feedQty),
+        water_liters: waterQty ? parseFloat(waterQty) : undefined,
+        feed_type: feedType || undefined,
+      })
+      setFeedQty('')
+      setWaterQty('')
+      setFeedType('')
+      setFeedDate(today())
+      loadFeedData(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setFeedError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setFeedLoading(false)
+    }
+  }
 
   const handleActivate = async () => {
     if (!id || !batch) return
@@ -171,7 +217,7 @@ export default function BatchDetailPage() {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-6">
         {batch.status === 'quarantine' && (
           <button
             onClick={handleActivate}
@@ -191,6 +237,122 @@ export default function BatchDetailPage() {
           </button>
         )}
       </div>
+
+      {/* Feed Consumption Section */}
+      {batch.status === 'active' && (
+        <div className="space-y-6">
+          {/* Feed summary */}
+          {feedSummary && feedSummary.record_count > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <SummaryCard label="Jami yem (kg)" value={Number(feedSummary.total_feed_kg).toFixed(1)} />
+              {feedSummary.total_water_liters != null && (
+                <SummaryCard label="Jami suv (L)" value={Number(feedSummary.total_water_liters).toFixed(0)} />
+              )}
+              <SummaryCard label="Kunlar soni" value={String(feedSummary.record_count)} />
+              {feedSummary.fcr != null && (
+                <SummaryCard label="FCR" value={Number(feedSummary.fcr).toFixed(3)} />
+              )}
+            </div>
+          )}
+
+          {/* Record feed form */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Kunlik ozuqlantirish</h2>
+            {feedError && (
+              <div className="text-red-600 text-sm mb-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {feedError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sana</label>
+                <input
+                  type="date"
+                  value={feedDate}
+                  onChange={(e) => setFeedDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Yem miqdori (kg) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="masalan: 150.5"
+                  value={feedQty}
+                  onChange={(e) => setFeedQty(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Suv iste'moli (litr)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="masalan: 300"
+                  value={waterQty}
+                  onChange={(e) => setWaterQty(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Yem turi</label>
+                <input
+                  type="text"
+                  placeholder="masalan: starter, grower"
+                  value={feedType}
+                  onChange={(e) => setFeedType(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleRecordFeed}
+              disabled={feedLoading || !feedQty}
+              className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {feedLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+
+          {/* Feed history */}
+          {feedRecords.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900">Ozuqlantirish tarixi</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Sana</th>
+                      <th className="px-4 py-3 text-right">Yem (kg)</th>
+                      <th className="px-4 py-3 text-right">Suv (L)</th>
+                      <th className="px-4 py-3 text-left">Tur</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {feedRecords.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-700">{r.feed_date}</td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-900">
+                          {Number(r.quantity_kg).toFixed(1)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-600">
+                          {r.water_liters != null ? Number(r.water_liters).toFixed(0) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{r.feed_type ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Close modal */}
       {showCloseModal && (
@@ -236,6 +398,15 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className="text-gray-900 font-medium text-sm">{value}</p>
+    </div>
+  )
+}
+
+function SummaryCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-green-50 rounded-xl p-4 border border-green-100">
+      <p className="text-xs text-green-600 mb-1">{label}</p>
+      <p className="text-green-900 font-semibold text-lg">{value}</p>
     </div>
   )
 }
