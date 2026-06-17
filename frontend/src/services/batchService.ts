@@ -22,6 +22,7 @@ import type {
   SaleRecord,
   BatchSalesSummary,
   SalePaymentStatus,
+  BatchProfit,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -284,6 +285,13 @@ export const saleService = {
 
   async getSalesSummary(batchId: string): Promise<APIResponse<BatchSalesSummary>> {
     const resp = await apiClient.get<APIResponse<BatchSalesSummary>>(`/sales/batch/${batchId}/summary`)
+    return resp.data
+  },
+}
+
+export const profitService = {
+  async getBatchProfit(batchId: string): Promise<APIResponse<BatchProfit>> {
+    const resp = await apiClient.get<APIResponse<BatchProfit>>(`/profit/batch/${batchId}`)
     return resp.data
   },
 }

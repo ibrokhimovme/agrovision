@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, expenseService, feedService, mortalityService, saleService, vaccinationService, weightService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, BatchCostSummary, BatchSalesSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, SaleRecord, VaccinationRecord, WeightSampling } from '@/types'
+import { batchService, expenseService, feedService, mortalityService, profitService, saleService, vaccinationService, weightService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, BatchCostSummary, BatchProfit, BatchSalesSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, SaleRecord, VaccinationRecord, WeightSampling } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -84,6 +84,9 @@ export default function BatchDetailPage() {
   const [expType, setExpType] = useState('other')
   const [expError, setExpError] = useState<string | null>(null)
 
+  // Profit state
+  const [batchProfit, setBatchProfit] = useState<BatchProfit | null>(null)
+
   // Sales state
   const [salesRecords, setSalesRecords] = useState<SaleRecord[]>([])
   const [salesSummary, setSalesSummary] = useState<BatchSalesSummary | null>(null)
@@ -135,6 +138,10 @@ export default function BatchDetailPage() {
     saleService.getSalesSummary(batchId).then((res) => setSalesSummary(res.data)).catch(() => {})
   }
 
+  const loadProfitData = (batchId: string) => {
+    profitService.getBatchProfit(batchId).then((res) => setBatchProfit(res.data)).catch(() => {})
+  }
+
   useEffect(() => {
     if (id && batch?.status === 'active') {
       loadFeedData(id)
@@ -143,6 +150,7 @@ export default function BatchDetailPage() {
       loadWeightData(id)
       loadCostData(id)
       loadSalesData(id)
+      loadProfitData(id)
     }
   }, [id, batch?.status])
 
@@ -272,6 +280,7 @@ export default function BatchDetailPage() {
       setSalePrice('')
       setSaleNotes('')
       loadSalesData(id)
+      loadProfitData(id)
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } }
       setSaleError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
@@ -297,6 +306,7 @@ export default function BatchDetailPage() {
       setExpDesc('')
       setExpAmount('')
       loadCostData(id)
+      loadProfitData(id)
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } }
       setExpError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
@@ -1047,6 +1057,34 @@ export default function BatchDetailPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Profit Analysis Section */}
+      {batch.status === 'active' && batchProfit && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-4">Foyda tahlili</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <SummaryCard
+              label="Jami tushum (UZS)"
+              value={Number(batchProfit.total_revenue_uzs).toLocaleString()}
+            />
+            <SummaryCard
+              label="Jami xarajat (UZS)"
+              value={Number(batchProfit.total_cost_uzs).toLocaleString()}
+              color={Number(batchProfit.total_cost_uzs) > Number(batchProfit.total_revenue_uzs) ? 'red' : 'green'}
+            />
+            <SummaryCard
+              label="Sof foyda (UZS)"
+              value={Number(batchProfit.gross_profit_uzs).toLocaleString()}
+              color={Number(batchProfit.gross_profit_uzs) >= 0 ? 'green' : 'red'}
+            />
+            <SummaryCard
+              label="Foyda marjasi"
+              value={`${Number(batchProfit.profit_margin_pct).toFixed(2)}%`}
+              color={Number(batchProfit.profit_margin_pct) >= 0 ? 'green' : 'red'}
+            />
+          </div>
         </div>
       )}
 

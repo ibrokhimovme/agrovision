@@ -221,6 +221,16 @@ export interface BatchSalesSummary {
   sale_count: number
 }
 
+export interface BatchProfit {
+  batch_id: string
+  total_revenue_uzs: number
+  total_cost_uzs: number
+  gross_profit_uzs: number
+  profit_margin_pct: number
+  sale_count: number
+  expense_count: number
+}
+
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 export type ItemType = 'feed' | 'vaccine' | 'medicine' | 'equipment' | 'packaging' | 'other';
