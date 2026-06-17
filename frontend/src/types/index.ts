@@ -98,6 +98,28 @@ export interface Batch {
   updated_at: string;
 }
 
+// ── Mortality ─────────────────────────────────────────────────────────────────
+
+export interface MortalityRecord {
+  id: string;
+  batch_id: string;
+  farm_id: string;
+  quantity: number;
+  cause_category?: string;
+  cause_description?: string;
+  disposal_method?: string;
+  deceased_at: string;
+}
+
+export interface MortalitySummary {
+  batch_id: string;
+  total_deaths: number;
+  initial_count: number;
+  current_count: number;
+  mortality_rate: number;
+  cause_breakdown: Record<string, number>;
+}
+
 // ── Feed Consumption ──────────────────────────────────────────────────────────
 
 export interface FeedRecord {

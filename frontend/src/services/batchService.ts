@@ -9,6 +9,8 @@ import type {
   PoultrySpecies,
   FeedRecord,
   FeedSummary,
+  MortalityRecord,
+  MortalitySummary,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -110,6 +112,34 @@ export const farmService = {
     const resp = await apiClient.get<PaginatedResponse<Farm>>('/farms/', {
       params: { page, page_size },
     })
+    return resp.data
+  },
+}
+
+export interface RecordMortalityPayload {
+  farm_id: string
+  quantity: number
+  deceased_at: string
+  cause_category?: string
+  cause_description?: string
+  disposal_method?: string
+}
+
+export const mortalityService = {
+  async recordMortality(batchId: string, payload: RecordMortalityPayload): Promise<APIResponse<MortalityRecord>> {
+    const resp = await apiClient.post<APIResponse<MortalityRecord>>(`/batches/${batchId}/mortality`, payload)
+    return resp.data
+  },
+
+  async listMortality(batchId: string, page = 1, page_size = 20): Promise<PaginatedResponse<MortalityRecord>> {
+    const resp = await apiClient.get<PaginatedResponse<MortalityRecord>>(`/batches/${batchId}/mortality`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+
+  async getMortalitySummary(batchId: string): Promise<APIResponse<MortalitySummary>> {
+    const resp = await apiClient.get<APIResponse<MortalitySummary>>(`/batches/${batchId}/mortality/summary`)
     return resp.data
   },
 }

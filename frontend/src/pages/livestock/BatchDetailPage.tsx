@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, feedService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, FeedRecord, FeedSummary } from '@/types'
+import { batchService, feedService, mortalityService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, FeedRecord, FeedSummary, MortalityRecord, MortalitySummary } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -52,6 +52,15 @@ export default function BatchDetailPage() {
   const [waterQty, setWaterQty] = useState('')
   const [feedType, setFeedType] = useState('')
 
+  // Mortality state
+  const [mortalityRecords, setMortalityRecords] = useState<MortalityRecord[]>([])
+  const [mortalitySummary, setMortalitySummary] = useState<MortalitySummary | null>(null)
+  const [mortLoading, setMortLoading] = useState(false)
+  const [mortError, setMortError] = useState<string | null>(null)
+  const [mortDate, setMortDate] = useState(today())
+  const [mortQty, setMortQty] = useState('')
+  const [mortCause, setMortCause] = useState('')
+
   useEffect(() => {
     if (!id) return
     batchService
@@ -66,9 +75,43 @@ export default function BatchDetailPage() {
     feedService.getFeedSummary(batchId).then((res) => setFeedSummary(res.data)).catch(() => {})
   }
 
+  const loadMortalityData = (batchId: string) => {
+    mortalityService.listMortality(batchId, 1, 20).then((res) => setMortalityRecords(res.data)).catch(() => {})
+    mortalityService.getMortalitySummary(batchId).then((res) => setMortalitySummary(res.data)).catch(() => {})
+  }
+
   useEffect(() => {
-    if (id && batch?.status === 'active') loadFeedData(id)
+    if (id && batch?.status === 'active') {
+      loadFeedData(id)
+      loadMortalityData(id)
+    }
   }, [id, batch?.status])
+
+  const handleRecordMortality = async () => {
+    if (!id || !batch || !mortQty) return
+    setMortLoading(true)
+    setMortError(null)
+    try {
+      await mortalityService.recordMortality(id, {
+        farm_id: batch.farm_id,
+        quantity: parseInt(mortQty),
+        deceased_at: new Date(mortDate).toISOString(),
+        cause_category: mortCause || undefined,
+      })
+      setMortQty('')
+      setMortCause('')
+      setMortDate(today())
+      // Refresh batch to update current_count
+      const updated = await batchService.getBatch(id)
+      setBatch(updated.data)
+      loadMortalityData(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setMortError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setMortLoading(false)
+    }
+  }
 
   const handleRecordFeed = async () => {
     if (!id || !batch || !feedQty) return
@@ -238,6 +281,98 @@ export default function BatchDetailPage() {
         )}
       </div>
 
+      {/* Mortality Section */}
+      {batch.status === 'active' && (
+        <div className="space-y-6 mb-6">
+          {mortalitySummary && mortalitySummary.total_deaths > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <SummaryCard label="Jami nobud" value={String(mortalitySummary.total_deaths)} color="red" />
+              <SummaryCard label="Hozirgi son" value={String(mortalitySummary.current_count)} color="red" />
+              <SummaryCard label="O'lim darajasi" value={`${Number(mortalitySummary.mortality_rate).toFixed(2)}%`} color="red" />
+              <SummaryCard label="Yozuvlar soni" value={String(mortalityRecords.length)} color="red" />
+            </div>
+          )}
+
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Kunlik o'lim yozuvi</h2>
+            {mortError && (
+              <div className="text-red-600 text-sm mb-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {mortError}
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sana</label>
+                <input
+                  type="date"
+                  value={mortDate}
+                  onChange={(e) => setMortDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nobud soni *</label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="masalan: 5"
+                  value={mortQty}
+                  onChange={(e) => setMortQty(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sabab</label>
+                <input
+                  type="text"
+                  placeholder="masalan: kasallik, jarohat"
+                  value={mortCause}
+                  onChange={(e) => setMortCause(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleRecordMortality}
+              disabled={mortLoading || !mortQty}
+              className="px-5 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              {mortLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+
+          {mortalityRecords.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900">O'lim tarixi</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Sana</th>
+                      <th className="px-4 py-3 text-right">Soni</th>
+                      <th className="px-4 py-3 text-left">Sabab</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {mortalityRecords.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-700">
+                          {new Date(r.deceased_at).toLocaleDateString('uz-UZ')}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-red-700">{r.quantity}</td>
+                        <td className="px-4 py-3 text-gray-600">{r.cause_category ?? '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Feed Consumption Section */}
       {batch.status === 'active' && (
         <div className="space-y-6">
@@ -402,11 +537,14 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function SummaryCard({ label, value, color = 'green' }: { label: string; value: string; color?: 'green' | 'red' }) {
+  const styles = color === 'red'
+    ? { wrap: 'bg-red-50 border-red-100', label: 'text-red-600', value: 'text-red-900' }
+    : { wrap: 'bg-green-50 border-green-100', label: 'text-green-600', value: 'text-green-900' }
   return (
-    <div className="bg-green-50 rounded-xl p-4 border border-green-100">
-      <p className="text-xs text-green-600 mb-1">{label}</p>
-      <p className="text-green-900 font-semibold text-lg">{value}</p>
+    <div className={`${styles.wrap} rounded-xl p-4 border`}>
+      <p className={`text-xs ${styles.label} mb-1`}>{label}</p>
+      <p className={`${styles.value} font-semibold text-lg`}>{value}</p>
     </div>
   )
 }
