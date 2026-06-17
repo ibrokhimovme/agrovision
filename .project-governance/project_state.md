@@ -63,10 +63,10 @@ See `docs/development/commit-conventions.md` for commit format rules.
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-08 (Weight Sampling) — NEXT TO EXECUTE
-Last Verified Phase:   P-07 (Vaccination Management) — VERIFIED_COMPLETE
-Overall Progress:      8 / 16 phases verified complete (50.00%)
-Next Action:           Execute Phase 8 — Weight Sampling
+Current Phase:         P-09 (Inventory Integration) — NEXT TO EXECUTE
+Last Verified Phase:   P-08 (Weight Sampling) — VERIFIED_COMPLETE
+Overall Progress:      9 / 16 phases verified complete (56.25%)
+Next Action:           Execute Phase 9 — Inventory Integration
 Blocker:               None
 ```
 
@@ -84,7 +84,7 @@ Blocker:               None
 | P-05 | Feed Consumption | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-06 | Mortality Tracking | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-07 | Vaccination Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
-| P-08 | Weight Sampling | NOT_STARTED | — | — |
+| P-08 | Weight Sampling | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-09 | Inventory Integration | NOT_STARTED | — | — |
 | P-10 | Cost Tracking | NOT_STARTED | — | — |
 | P-11 | Sales Management | NOT_STARTED | — | — |
@@ -316,6 +316,7 @@ Blocker:               None
 | P-05 | 2026-06-17 | 2026-06-17 | 1 day | 13 files (see CL-005) |
 | P-06 | 2026-06-17 | 2026-06-17 | 1 day | 12 files (see CL-006) |
 | P-07 | 2026-06-17 | 2026-06-17 | 1 day | 14 files (see CL-007) |
+| P-08 | 2026-06-17 | 2026-06-17 | 1 day | 11 files (see CL-008) |
 
 ---
 
@@ -491,6 +492,28 @@ Every modification to the project must be recorded here. Never delete entries.
   - `frontend/src/pages/livestock/BatchDetailPage.tsx` (vaccination table + Bajarildi button, VaccStatusBadge)
 - **Verification:** 28/28 unit tests passed; TypeScript 0 errors; Vite build success (375 kB)
 - **Requirements implemented:** SF-07 (vaccination management), BP-07 (schedule templates), UC-03 (vaccination execution)
+- **Services impacted:** livestock-service, frontend
+
+---
+
+### CL-008
+- **Date:** 2026-06-17
+- **Task:** Phase 8 — Weight Sampling
+- **Files Created:**
+  - `services/livestock-service/app/domain/repositories/weight_repository.py`
+  - `services/livestock-service/app/infrastructure/database/repositories/weight_repository_impl.py`
+  - `services/livestock-service/app/application/dtos/weight_dtos.py`
+  - `services/livestock-service/app/application/use_cases/record_weight_sampling.py`
+  - `services/livestock-service/app/application/use_cases/get_weight_history.py`
+  - `services/livestock-service/app/api/v1/endpoints/weight.py`
+  - `services/livestock-service/tests/unit/test_weight_sampling.py`
+- **Files Modified:**
+  - `services/livestock-service/app/api/v1/router.py` (weight_router added)
+  - `frontend/src/types/index.ts` (WeightSampling, GrowthMetrics types)
+  - `frontend/src/services/batchService.ts` (weightService with 3 methods)
+  - `frontend/src/pages/livestock/BatchDetailPage.tsx` (weight form, ADG/FCR cards, history table)
+- **Verification:** 36/36 unit tests passed; TypeScript 0 errors; Vite build success (379 kB)
+- **Requirements implemented:** SF-06 (weight sampling), BP-08 (ADG/FCR computation)
 - **Services impacted:** livestock-service, frontend
 
 ---
