@@ -8,9 +8,9 @@ import BatchListPage from '@/pages/livestock/BatchListPage'
 import NewBatchPage from '@/pages/livestock/NewBatchPage'
 import BatchDetailPage from '@/pages/livestock/BatchDetailPage'
 import FarmListPage from '@/pages/farms/FarmListPage'
+import InventoryPage from '@/pages/inventory/InventoryPage'
 
 const DashboardPage  = () => <div className="text-gray-600">Bosh sahifa — tez orada</div>
-const InventoryPage  = () => <div className="text-gray-600">Ombor — tez orada</div>
 const FinancePage    = () => <div className="text-gray-600">Moliya — tez orada</div>
 const ReportsPage    = () => <div className="text-gray-600">Hisobotlar — tez orada</div>
 const NotFoundPage   = () => <div className="text-gray-600">404 — Sahifa topilmadi</div>

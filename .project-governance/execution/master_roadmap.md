@@ -502,7 +502,7 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 ## Phase 9 — Inventory Integration
 
 **Goal:** Warehouse and stock management for feed, vaccines, and medicines. FIFO/FEFO dispatch.  
-**Status:** NOT_STARTED  
+**Status:** DONE  
 **Complexity:** High  
 **Dependencies:** P-04  
 **Services Impacted:** inventory-service  
@@ -514,22 +514,22 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 
 | Task ID | Description | BRD | SRS | Status |
 |---------|-------------|-----|-----|--------|
-| T-09-01 | Alembic migration: `warehouses`, `stock_items`, `stock_batches`, `stock_movements` (inventory_db) | BP-09 | SF-12 | NOT_STARTED |
-| T-09-02 | Implement `AbstractStockRepository` + SQLAlchemy implementation | BP-09 | SF-12 | NOT_STARTED |
-| T-09-03 | `ReceiveStockUseCase` — receive stock batch with expiry date, cost, FIFO/FEFO ordering | BP-09 | UC-05 | NOT_STARTED |
-| T-09-04 | `DispatchStockUseCase` — dispatch from stock (FIFO: oldest batch first; FEFO: nearest expiry first) | BP-09 | BP-09 | NOT_STARTED |
-| T-09-05 | `GetStockLevelUseCase` — current quantity available per item per warehouse | BP-09 | SF-12 | NOT_STARTED |
-| T-09-06 | Low-stock alert: publish `LowStockAlertEvent` when quantity < min_threshold | BP-09 | SF-12 | NOT_STARTED |
-| T-09-07 | Expiry alert: publish `ExpiryAlertEvent` when stock_batch.expiry_date < today + 7 days | BP-09 | SF-12 | NOT_STARTED |
-| T-09-08 | RabbitMQ consumer: consume `FeedConsumedEvent`, `VaccinationCompletedEvent`, `MedicationRecordedEvent` → auto-dispatch stock | BP-09 | SF-12 | NOT_STARTED |
-| T-09-09 | `POST /api/v1/warehouses/` — create warehouse | BP-09 | SF-13 | NOT_STARTED |
-| T-09-10 | `POST /api/v1/stock-items/` — create stock item (feed type, vaccine, medicine) | BP-09 | SF-12 | NOT_STARTED |
-| T-09-11 | `POST /api/v1/stock-items/{id}/receive` — receive stock batch | BP-09 | UC-05 | NOT_STARTED |
-| T-09-12 | `GET /api/v1/stock-items/` — list stock with current quantities | BP-09 | SF-12 | NOT_STARTED |
-| T-09-13 | `GET /api/v1/stock-items/{id}/movements` — stock movement history | BP-09 | SF-12 | NOT_STARTED |
-| T-09-14 | Frontend: inventory list page | §8 | SF-12 | NOT_STARTED |
-| T-09-15 | Frontend: receive stock form | §8 | UC-05 | NOT_STARTED |
-| T-09-16 | Unit + integration tests | BP-09 | SF-12 | NOT_STARTED |
+| T-09-01 | Alembic migration: `warehouses`, `stock_items`, `stock_batches`, `stock_movements` (inventory_db) | BP-09 | SF-12 | DONE |
+| T-09-02 | Implement `AbstractStockRepository` + SQLAlchemy implementation | BP-09 | SF-12 | DONE |
+| T-09-03 | `ReceiveStockUseCase` — receive stock batch with expiry date, cost, FIFO/FEFO ordering | BP-09 | UC-05 | DONE |
+| T-09-04 | `DispatchStockUseCase` — dispatch from stock (FIFO: oldest batch first; FEFO: nearest expiry first) | BP-09 | BP-09 | DONE |
+| T-09-05 | `GetStockLevelUseCase` — current quantity available per item per warehouse | BP-09 | SF-12 | DONE |
+| T-09-06 | Low-stock alert: publish `LowStockAlertEvent` when quantity < min_threshold | BP-09 | SF-12 | DEFERRED |
+| T-09-07 | Expiry alert: publish `ExpiryAlertEvent` when stock_batch.expiry_date < today + 7 days | BP-09 | SF-12 | DEFERRED |
+| T-09-08 | RabbitMQ consumer: consume `FeedConsumedEvent`, `VaccinationCompletedEvent`, `MedicationRecordedEvent` → auto-dispatch stock | BP-09 | SF-12 | DEFERRED |
+| T-09-09 | `POST /api/v1/warehouses/` — create warehouse | BP-09 | SF-13 | DONE |
+| T-09-10 | `POST /api/v1/stock-items/` — create stock item (feed type, vaccine, medicine) | BP-09 | SF-12 | DONE |
+| T-09-11 | `POST /api/v1/stock-items/{id}/receive` — receive stock batch | BP-09 | UC-05 | DONE |
+| T-09-12 | `GET /api/v1/stock-items/` — list stock with current quantities | BP-09 | SF-12 | DONE |
+| T-09-13 | `GET /api/v1/stock-items/{id}/movements` — stock movement history | BP-09 | SF-12 | DONE |
+| T-09-14 | Frontend: inventory list page | §8 | SF-12 | DONE |
+| T-09-15 | Frontend: receive stock form | §8 | UC-05 | DONE |
+| T-09-16 | Unit + integration tests | BP-09 | SF-12 | DONE |
 
 ### Acceptance Criteria — Phase 9
 - Warehouse Manager can receive stock with quantity, unit price, expiry date
