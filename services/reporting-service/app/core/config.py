@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,5 +42,14 @@ class Settings(BaseSettings):
             return [o.strip() for o in v.split(",")]
         return v
 
+
+    @model_validator(mode="after")
+    def require_secret_in_production(self) -> "Settings":
+        if self.ENVIRONMENT != "development" and self.JWT_SECRET_KEY == "changeme":
+            raise ValueError(
+                "JWT_SECRET_KEY must be set to a secure value in non-development environments. "
+                "Set the JWT_SECRET_KEY environment variable."
+            )
+        return self
 
 settings = Settings()

@@ -63,12 +63,11 @@ See `docs/development/commit-conventions.md` for commit format rules.
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-15 remaining items (performance/security/docs) or P-18+ if defined
-Last Verified Phase:   P-17 (User Management UI) — VERIFIED_COMPLETE
-P-15 Status:           PARTIALLY_COMPLETE (E2E tests done; performance/security/docs pending)
-Overall Progress:      17 / 18 phases verified complete (94.4%)
-New Requirements:      P-16 DONE; P-17 DONE — all new requirements satisfied
-Next Action:           Await user direction — all MVP phases and new requirements complete
+Current Phase:         ALL PHASES COMPLETE
+Last Verified Phase:   P-15 (MVP Stabilization) — VERIFIED_COMPLETE
+Overall Progress:      18 / 18 phases verified complete (100%)
+New Requirements:      ALL SATISFIED (P-16 Farm CRUD, P-17 User Management UI)
+Next Action:           Await user direction — no outstanding roadmap items
 Blocker:               None
 ```
 
@@ -816,6 +815,28 @@ Every modification to the project must be recorded here. Never delete entries.
 
 ---
 
+---
+
+### CL-020
+- **Date:** 2026-06-17
+- **Task:** P-15 MVP Stabilization — COMPLETE
+- **Trigger:** "Execute Next" after P-17 complete
+- **Deliverables:**
+  - `tests/performance/test_report_latency.py` — async latency tests (single + p95 concurrent, batch list, farm list)
+  - `tests/uat/uat_test_script.md` — 10 UAT test cases (TC-01–TC-10) covering all major user flows
+  - `DEPLOYMENT.md` — dev + production deployment guide, migration steps, backup/restore scripts, health checks
+  - `services/*/app/core/config.py` (all 8) — SEC-01 fix: `model_validator` blocks startup if JWT_SECRET_KEY="changeme" in non-dev environments
+- **Security findings resolved:**
+  - SEC-01: Default JWT secret "changeme" had no production guard — FIXED (model_validator)
+  - SEC-02: No SQL injection risk (SQLAlchemy ORM, no raw string queries)
+  - SEC-03: CORS properly restricted to configured origins (not wildcard)
+  - SEC-04: Passwords hashed with bcrypt
+  - SEC-05: Rate limiting absent on auth endpoints — accepted risk for MVP (documented)
+- **Uzbek audit result:** PASS — 0 English user-visible strings found in frontend
+- **Impact:** All 18 roadmap phases now VERIFIED_COMPLETE. AgroVision MVP is delivery-ready.
+
+---
+
 *project_state.md — AgroVision Authoritative Execution State*  
-*Created: 2026-06-17 | Version: 1.3 (P-17 complete 2026-06-17)*  
+*Created: 2026-06-17 | Version: 1.4 — ALL PHASES COMPLETE 2026-06-17*  
 *IMPORTANT: Always append to Change Ledger. Never delete or overwrite history.*
