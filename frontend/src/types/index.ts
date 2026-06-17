@@ -35,6 +35,25 @@ export interface ErrorResponse {
   trace_id?: string;
 }
 
+// ── Users / Identity ─────────────────────────────────────────────────────────
+
+export interface RoleDetail {
+  id: string;
+  name: string;
+  display_name: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string;
+  phone?: string;
+  is_active: boolean;
+  is_superuser: boolean;
+  farm_id?: string;
+  roles: RoleDetail[];
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export interface AuthTokens {

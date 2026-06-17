@@ -8,13 +8,13 @@
 
 ```
 Phases Total:      18  (Phase 0 – Phase 17)
-VERIFIED_COMPLETE: 16  (Phase 0 – Phase 14, Phase 16)
+VERIFIED_COMPLETE: 17  (Phase 0 – Phase 14, Phase 16, Phase 17)
 PARTIALLY_COMPLETE: 1  (Phase 15 — E2E tests done; performance/security/docs pending)
-NOT_STARTED:        1  (Phase 17 — User Management UI)
+NOT_STARTED:        0
 
 MVP Core Workflow: COMPLETE
-New Requirements:  1 phase not started (P-17)
-Overall Progress:  88.9%
+New Requirements:  ALL COMPLETE (P-16, P-17 done)
+Overall Progress:  94.4%
 ```
 
 ---
@@ -40,7 +40,7 @@ Overall Progress:  88.9%
 | P-14 | Reporting | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
 | P-15 | MVP Stabilization | PARTIALLY_COMPLETE | 2026-06-17 | — | — |
 | P-16 | Farm Management CRUD | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
-| P-17 | User Management UI | NOT_STARTED | — | — | — |
+| P-17 | User Management UI | VERIFIED_COMPLETE | 2026-06-17 | 2026-06-17 | 2026-06-17 |
 
 ---
 
@@ -461,23 +461,22 @@ Overall Progress:  88.9%
 
 ## Phase 17 — User Management UI (NEW)
 
-**Status:** NOT_STARTED  
+**Status:** VERIFIED_COMPLETE  
 **Priority:** HIGH — required by new business requirement  
 **Dependencies:** P-02 VERIFIED_COMPLETE (backend already done)
 
-### Verification Checklist (for completion)
+### Verification Checklist
 
 - [x] Backend: `POST /api/v1/users/` — create user (DONE)
 - [x] Backend: `GET /api/v1/users/` — list users (DONE)
 - [x] Backend: `GET /api/v1/users/{id}` — get user (DONE)
 - [x] Backend: `PATCH /api/v1/users/{id}` — update user incl. is_active toggle (DONE)
 - [x] Backend: `GET /api/v1/roles/` — list roles (DONE)
-- [ ] Frontend: User Management page (`/users` route)
-- [ ] Frontend: User list table (name, email, role, status)
-- [ ] Frontend: Create user form (Uzbek labels)
-- [ ] Frontend: Edit user / role assignment
-- [ ] Frontend: Enable/disable user toggle
-- [ ] Add "Foydalanuvchilar" to Sidebar navigation
+- [x] Frontend: UsersPage.tsx — user table with create/edit modals, enable/disable toggle
+- [x] Frontend: `/users` route added to App.tsx
+- [x] Frontend: `userService.ts` — listUsers, createUser, updateUser, listRoles
+- [x] Frontend: `AdminUser` + `RoleDetail` types added to types/index.ts
+- [x] Add "Foydalanuvchilar" to Sidebar navigation
 
 ---
 
@@ -498,6 +497,7 @@ Overall Progress:  88.9%
 | 2026-06-17 | Phase 3 marked VERIFIED_COMPLETE (TS 0 errors, Vite build success) | P-03 |
 | 2026-06-17 | Phases 4–14 VERIFIED_COMPLETE; Phase 15 PARTIALLY_COMPLETE; P-16 and P-17 added for new requirements | P-04–P-17 |
 | 2026-06-17 | P-16 VERIFIED_COMPLETE — Farm CRUD backend + FarmDetailPage + FarmListPage + BN-FIX-01 resolved | P-16 |
+| 2026-06-17 | P-17 VERIFIED_COMPLETE — UsersPage, userService.ts, Sidebar nav, types | P-17 |
 
 ---
 

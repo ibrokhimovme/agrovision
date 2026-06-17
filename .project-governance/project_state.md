@@ -63,12 +63,12 @@ See `docs/development/commit-conventions.md` for commit format rules.
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-17 (User Management UI) — NEXT TO EXECUTE
-Last Verified Phase:   P-16 (Farm Management CRUD) — VERIFIED_COMPLETE
+Current Phase:         P-15 remaining items (performance/security/docs) or P-18+ if defined
+Last Verified Phase:   P-17 (User Management UI) — VERIFIED_COMPLETE
 P-15 Status:           PARTIALLY_COMPLETE (E2E tests done; performance/security/docs pending)
-Overall Progress:      16 / 18 phases verified complete (88.9%)
-New Requirements:      P-16 Farm Management CRUD — DONE; P-17 User Management UI — NOT_STARTED
-Next Action:           Execute Phase 17 — User Management UI (UsersPage, create/edit/toggle, Sidebar nav)
+Overall Progress:      17 / 18 phases verified complete (94.4%)
+New Requirements:      P-16 DONE; P-17 DONE — all new requirements satisfied
+Next Action:           Await user direction — all MVP phases and new requirements complete
 Blocker:               None
 ```
 
@@ -800,6 +800,22 @@ Every modification to the project must be recorded here. Never delete entries.
 
 ---
 
+---
+
+### CL-019
+- **Date:** 2026-06-17
+- **Task:** P-17 User Management UI — COMPLETE
+- **Trigger:** "Execute Next" after P-16 complete
+- **Files Modified:**
+  - `frontend/src/types/index.ts` — Added RoleDetail, AdminUser interfaces
+  - `frontend/src/services/userService.ts` — NEW: listUsers, createUser, updateUser, listRoles
+  - `frontend/src/pages/users/UsersPage.tsx` — NEW: user table, create modal, edit modal, enable/disable toggle
+  - `frontend/src/App.tsx` — Added /users route
+  - `frontend/src/components/layout/Sidebar.tsx` — Added Foydalanuvchilar nav item
+- **Impact:** Admin can now create workers/managers, assign roles, and toggle user active status from the UI
+
+---
+
 *project_state.md — AgroVision Authoritative Execution State*  
-*Created: 2026-06-17 | Version: 1.2 (P-16 complete 2026-06-17)*  
+*Created: 2026-06-17 | Version: 1.3 (P-17 complete 2026-06-17)*  
 *IMPORTANT: Always append to Change Ledger. Never delete or overwrite history.*
