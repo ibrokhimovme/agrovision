@@ -30,10 +30,10 @@ EVERY TASK COMPLETION:
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-05 (Feed Consumption) — NEXT TO EXECUTE
-Last Verified Phase:   P-04 (Poultry Batch Management) — VERIFIED_COMPLETE
-Overall Progress:      5 / 16 phases verified complete (31.25%)
-Next Action:           Execute Phase 5 — Feed Consumption
+Current Phase:         P-06 (Mortality Tracking) — NEXT TO EXECUTE
+Last Verified Phase:   P-05 (Feed Consumption) — VERIFIED_COMPLETE
+Overall Progress:      6 / 16 phases verified complete (37.50%)
+Next Action:           Execute Phase 6 — Mortality Tracking
 Blocker:               None
 ```
 
@@ -48,7 +48,7 @@ Blocker:               None
 | P-02 | Identity Service | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-03 | Frontend Foundation | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-04 | Poultry Batch Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
-| P-05 | Feed Consumption | NOT_STARTED | — | — |
+| P-05 | Feed Consumption | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-06 | Mortality Tracking | NOT_STARTED | — | — |
 | P-07 | Vaccination Management | NOT_STARTED | — | — |
 | P-08 | Weight Sampling | NOT_STARTED | — | — |
@@ -280,6 +280,7 @@ Blocker:               None
 | P-02 | 2026-06-17 | 2026-06-17 | 1 day | 21 files (see CL-002) |
 | P-03 | 2026-06-17 | 2026-06-17 | 1 day | 9 files (see CL-003) |
 | P-04 | 2026-06-17 | 2026-06-17 | 1 day | 30+ files (see CL-004) |
+| P-05 | 2026-06-17 | 2026-06-17 | 1 day | 13 files (see CL-005) |
 
 ---
 
@@ -384,6 +385,30 @@ Every modification to the project must be recorded here. Never delete entries.
 - **Verification:** 9/9 unit tests passed
 - **Requirements implemented:** SF-03 (batch lifecycle), BP-01 (acquisition), BP-02 (arrival), BP-03 (quarantine 7-day minimum), UC-02 (open batch), UC-10 (close batch)
 - **Services impacted:** livestock-service, farm-service, frontend
+
+---
+
+### CL-005
+- **Date:** 2026-06-17
+- **Task:** Phase 5 — Feed Consumption
+- **Files Created:**
+  - `services/livestock-service/app/domain/models/feed.py`
+  - `services/livestock-service/app/domain/repositories/feed_repository.py`
+  - `services/livestock-service/app/infrastructure/database/repositories/feed_repository_impl.py`
+  - `services/livestock-service/app/application/dtos/feed_dtos.py`
+  - `services/livestock-service/app/application/use_cases/record_feed.py`
+  - `services/livestock-service/app/application/use_cases/get_feed_history.py`
+  - `services/livestock-service/app/api/v1/endpoints/feed.py`
+  - `services/livestock-service/migrations/versions/003_add_feed_consumptions.py`
+  - `services/livestock-service/tests/unit/test_record_feed.py`
+- **Files Modified:**
+  - `services/livestock-service/app/api/v1/router.py` (added feed router)
+  - `frontend/src/types/index.ts` (FeedRecord, FeedSummary types)
+  - `frontend/src/services/batchService.ts` (feedService with 3 methods)
+  - `frontend/src/pages/livestock/BatchDetailPage.tsx` (feed form + history table)
+- **Verification:** 13/13 unit tests passed; TypeScript 0 errors; Vite build success (366 kB)
+- **Requirements implemented:** SF-10 (feed management), SF-11 (water simplified), BP-04 (feeding), BP-05 (water)
+- **Services impacted:** livestock-service, frontend
 
 ---
 
