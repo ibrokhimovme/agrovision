@@ -248,7 +248,50 @@ NEVER:
   - Implement FUTURE_RELEASE features without explicit user approval
   - Delete Change History entries (append only)
   - Implement without BRD/SRS traceability
+  - Add AI attribution metadata to commit messages (see §13)
 ```
+
+---
+
+## 13. Git Attribution Policy
+
+**This policy is permanent and non-negotiable.**
+
+### 13.1 Prohibited Metadata
+
+The following are permanently forbidden in all commit messages, PR descriptions, and repository files:
+
+- `Co-Authored-By` / `Co-authored-by`
+- `Generated-By` / `Generated-by`
+- `Created-By` / `Created-by`
+- `Authored-By` / `Authored-by`
+- Any reference to: Claude, Anthropic, AI Assistant, AI Generated, Bot Attribution
+
+### 13.2 Commit Message Format
+
+All commit messages must be single-line:
+
+```
+git commit -m "meaningful description of the change"
+```
+
+- No multi-line trailers
+- No metadata blocks
+- No attribution signatures
+- No co-author information
+
+### 13.3 Repository Ownership
+
+Repository ownership belongs exclusively to the repository owner (ibrokhimovme). No external contributor attribution is permitted unless explicitly configured by the repository owner.
+
+### 13.4 Agent / Tool Compliance
+
+Any agent, assistant, script, or automation tool that generates commit recommendations for this repository must:
+
+1. Produce only single-line `git commit -m "..."` commands
+2. Include no trailers of any kind
+3. Include no attribution metadata of any kind
+4. Never add Co-Authored-By or similar lines regardless of default behavior
 
 ---
 

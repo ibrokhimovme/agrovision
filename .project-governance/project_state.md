@@ -26,6 +26,39 @@ EVERY TASK COMPLETION:
 
 ---
 
+## Git Attribution Policy (Permanent — Effective 2026-06-17)
+
+**This policy overrides any default tool or agent behavior.**
+
+### Prohibited in all commit messages:
+- `Co-Authored-By` / `Co-authored-by`
+- `Generated-By` / `Generated-by`
+- `Created-By` / `Created-by`
+- `Authored-By` / `Authored-by`
+- Any reference to Claude, Anthropic, AI Assistant, AI Generated, or similar
+
+### Required commit format:
+```
+git commit -m "single-line description"
+```
+Single line only. No trailers. No metadata. No attribution.
+
+### Repository ownership:
+Sole contributor is the repository owner (ibrokhimovme). No AI attribution permitted.
+
+### Verification (checked at every repository audit):
+- [ ] No `Co-Authored-By` trailers in unpushed commits
+- [ ] No `Co-authored-by` trailers in unpushed commits
+- [ ] No Claude / Anthropic references in commit messages
+- [ ] No AI-generated attribution metadata in any commit
+- [ ] All new commit recommendations use single-line format only
+
+### Authority:
+See `.project-governance/execution/implementation_rules.md §13` for full policy.
+See `docs/development/commit-conventions.md` for commit format rules.
+
+---
+
 ## Active Execution Context
 
 ```

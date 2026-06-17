@@ -84,3 +84,21 @@ of expired lots. Domain layer raises BusinessRuleViolationError on attempt.
 - Body lines ≤100 characters
 - Breaking changes: `BREAKING CHANGE:` in footer
 - Reference BRD/SRS sections in commit body for feature commits
+
+---
+
+## Git Attribution Policy
+
+**Attribution metadata is permanently prohibited in this repository.**
+
+Forbidden trailers and metadata:
+
+- `Co-Authored-By` / `Co-authored-by`
+- `Generated-By` / `Generated-by`
+- `Created-By` / `Created-by`
+- `Authored-By` / `Authored-by`
+- Any reference to Claude, Anthropic, AI Assistant, or AI-generated content
+
+Commit format must never include these trailers. Any tool, agent, or script that generates commit messages must omit them entirely.
+
+Repository ownership belongs exclusively to the repository owner. No external contributor attribution is permitted unless explicitly configured by the repository owner.
