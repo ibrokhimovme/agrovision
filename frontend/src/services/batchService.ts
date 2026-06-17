@@ -11,6 +11,8 @@ import type {
   FeedSummary,
   MortalityRecord,
   MortalitySummary,
+  VaccinationRecord,
+  VaccinationSchedule,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -140,6 +142,53 @@ export const mortalityService = {
 
   async getMortalitySummary(batchId: string): Promise<APIResponse<MortalitySummary>> {
     const resp = await apiClient.get<APIResponse<MortalitySummary>>(`/batches/${batchId}/mortality/summary`)
+    return resp.data
+  },
+}
+
+export interface CreateSchedulePayload {
+  farm_id: string
+  species: string
+  vaccine_name: string
+  day_of_age: number
+  is_mandatory?: boolean
+  notes?: string
+}
+
+export interface RecordVaccinationPayload {
+  vaccinated_at?: string
+  quantity_used?: number
+  unit?: string
+  notes?: string
+}
+
+export const vaccinationService = {
+  async createSchedule(payload: CreateSchedulePayload): Promise<APIResponse<VaccinationSchedule>> {
+    const resp = await apiClient.post<APIResponse<VaccinationSchedule>>('/vaccination-schedules/', payload)
+    return resp.data
+  },
+
+  async listSchedules(farmId: string, species?: string): Promise<APIResponse<VaccinationSchedule[]>> {
+    const resp = await apiClient.get<APIResponse<VaccinationSchedule[]>>('/vaccination-schedules/', {
+      params: { farm_id: farmId, ...(species ? { species } : {}) },
+    })
+    return resp.data
+  },
+
+  async generatePlan(batchId: string): Promise<APIResponse<VaccinationRecord[]>> {
+    const resp = await apiClient.post<APIResponse<VaccinationRecord[]>>(`/batches/${batchId}/vaccinations/generate`)
+    return resp.data
+  },
+
+  async listVaccinations(batchId: string, page = 1, page_size = 50): Promise<PaginatedResponse<VaccinationRecord>> {
+    const resp = await apiClient.get<PaginatedResponse<VaccinationRecord>>(`/batches/${batchId}/vaccinations/`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+
+  async completeVaccination(recordId: string, payload: RecordVaccinationPayload): Promise<APIResponse<VaccinationRecord>> {
+    const resp = await apiClient.patch<APIResponse<VaccinationRecord>>(`/vaccinations/${recordId}/complete`, payload)
     return resp.data
   },
 }

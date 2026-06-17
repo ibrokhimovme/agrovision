@@ -120,6 +120,35 @@ export interface MortalitySummary {
   cause_breakdown: Record<string, number>;
 }
 
+// ── Vaccination ───────────────────────────────────────────────────────────────
+
+export type VaccinationStatus = 'planned' | 'completed' | 'skipped' | 'overdue';
+
+export interface VaccinationRecord {
+  id: string;
+  batch_id: string;
+  farm_id: string;
+  schedule_id?: string;
+  vaccine_name: string;
+  status: VaccinationStatus;
+  scheduled_at?: string;
+  vaccinated_at?: string;
+  quantity_used?: number;
+  unit?: string;
+  vaccine_inventory_item_id?: string;
+  notes?: string;
+}
+
+export interface VaccinationSchedule {
+  id: string;
+  farm_id: string;
+  species: string;
+  vaccine_name: string;
+  day_of_age: number;
+  is_mandatory: boolean;
+  notes?: string;
+}
+
 // ── Feed Consumption ──────────────────────────────────────────────────────────
 
 export interface FeedRecord {

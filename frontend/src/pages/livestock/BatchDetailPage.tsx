@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, feedService, mortalityService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, FeedRecord, FeedSummary, MortalityRecord, MortalitySummary } from '@/types'
+import { batchService, feedService, mortalityService, vaccinationService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, FeedRecord, FeedSummary, MortalityRecord, MortalitySummary, VaccinationRecord } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -61,6 +61,12 @@ export default function BatchDetailPage() {
   const [mortQty, setMortQty] = useState('')
   const [mortCause, setMortCause] = useState('')
 
+  // Vaccination state
+  const [vaccRecords, setVaccRecords] = useState<VaccinationRecord[]>([])
+  const [vaccLoading, setVaccLoading] = useState(false)
+  const [vaccError, setVaccError] = useState<string | null>(null)
+  const [completingId, setCompletingId] = useState<string | null>(null)
+
   useEffect(() => {
     if (!id) return
     batchService
@@ -80,12 +86,49 @@ export default function BatchDetailPage() {
     mortalityService.getMortalitySummary(batchId).then((res) => setMortalitySummary(res.data)).catch(() => {})
   }
 
+  const loadVaccinations = (batchId: string) => {
+    vaccinationService.listVaccinations(batchId, 1, 50).then((res) => setVaccRecords(res.data)).catch(() => {})
+  }
+
   useEffect(() => {
     if (id && batch?.status === 'active') {
       loadFeedData(id)
       loadMortalityData(id)
+      loadVaccinations(id)
     }
   }, [id, batch?.status])
+
+  const handleCompleteVaccination = async (recordId: string) => {
+    if (!id) return
+    setCompletingId(recordId)
+    setVaccError(null)
+    try {
+      await vaccinationService.completeVaccination(recordId, {
+        vaccinated_at: new Date().toISOString(),
+      })
+      loadVaccinations(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setVaccError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setCompletingId(null)
+    }
+  }
+
+  const handleGenerateVaccPlan = async () => {
+    if (!id) return
+    setVaccLoading(true)
+    setVaccError(null)
+    try {
+      await vaccinationService.generatePlan(id)
+      loadVaccinations(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setVaccError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setVaccLoading(false)
+    }
+  }
 
   const handleRecordMortality = async () => {
     if (!id || !batch || !mortQty) return
@@ -373,6 +416,81 @@ export default function BatchDetailPage() {
         </div>
       )}
 
+      {/* Vaccination Section */}
+      {batch.status === 'active' && (
+        <div className="space-y-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-gray-900">Emlash rejasi</h2>
+            <button
+              onClick={handleGenerateVaccPlan}
+              disabled={vaccLoading}
+              className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              {vaccLoading ? 'Yuklanmoqda...' : 'Rejani yangilash'}
+            </button>
+          </div>
+
+          {vaccError && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {vaccError}
+            </div>
+          )}
+
+          {vaccRecords.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-500">
+              Emlash rejasi mavjud emas. "Rejani yangilash" tugmasini bosing.
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Vaksina</th>
+                      <th className="px-4 py-3 text-left">Rejalashtirilgan</th>
+                      <th className="px-4 py-3 text-left">Holat</th>
+                      <th className="px-4 py-3 text-left">Bajarilgan</th>
+                      <th className="px-4 py-3 text-right">Amal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {vaccRecords.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-800">{r.vaccine_name}</td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {r.scheduled_at
+                            ? new Date(r.scheduled_at).toLocaleDateString('uz-UZ')
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <VaccStatusBadge status={r.status} />
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {r.vaccinated_at
+                            ? new Date(r.vaccinated_at).toLocaleDateString('uz-UZ')
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {(r.status === 'planned' || r.status === 'overdue') && (
+                            <button
+                              onClick={() => handleCompleteVaccination(r.id)}
+                              disabled={completingId === r.id}
+                              className="px-3 py-1 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                            >
+                              {completingId === r.id ? '...' : 'Bajarildi'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Feed Consumption Section */}
       {batch.status === 'active' && (
         <div className="space-y-6">
@@ -534,6 +652,22 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className="text-gray-900 font-medium text-sm">{value}</p>
     </div>
+  )
+}
+
+const VACC_STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  planned:   { label: 'Rejalashtirilgan', cls: 'bg-blue-100 text-blue-700' },
+  overdue:   { label: 'Muddati o\'tgan',   cls: 'bg-red-100 text-red-700' },
+  completed: { label: 'Bajarildi',          cls: 'bg-green-100 text-green-700' },
+  skipped:   { label: 'O\'tkazib yuborildi', cls: 'bg-gray-100 text-gray-600' },
+}
+
+function VaccStatusBadge({ status }: { status: string }) {
+  const cfg = VACC_STATUS_CONFIG[status] ?? { label: status, cls: 'bg-gray-100 text-gray-600' }
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.cls}`}>
+      {cfg.label}
+    </span>
   )
 }
 
