@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, feedService, mortalityService, vaccinationService, weightService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, VaccinationRecord, WeightSampling } from '@/types'
+import { batchService, expenseService, feedService, mortalityService, vaccinationService, weightService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, BatchCostSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, VaccinationRecord, WeightSampling } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -75,6 +75,15 @@ export default function BatchDetailPage() {
   const [vaccError, setVaccError] = useState<string | null>(null)
   const [completingId, setCompletingId] = useState<string | null>(null)
 
+  // Cost tracking state
+  const [costSummary, setCostSummary] = useState<BatchCostSummary | null>(null)
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [costLoading, setCostLoading] = useState(false)
+  const [expDesc, setExpDesc] = useState('')
+  const [expAmount, setExpAmount] = useState('')
+  const [expType, setExpType] = useState('other')
+  const [expError, setExpError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!id) return
     batchService
@@ -103,12 +112,18 @@ export default function BatchDetailPage() {
     weightService.getMetrics(batchId).then((res) => setGrowthMetrics(res.data)).catch(() => {})
   }
 
+  const loadCostData = (batchId: string) => {
+    expenseService.getBatchCostSummary(batchId).then((res) => setCostSummary(res.data)).catch(() => {})
+    expenseService.listBatchExpenses(batchId, 1, 20).then((res) => setExpenses(res.data)).catch(() => {})
+  }
+
   useEffect(() => {
     if (id && batch?.status === 'active') {
       loadFeedData(id)
       loadMortalityData(id)
       loadVaccinations(id)
       loadWeightData(id)
+      loadCostData(id)
     }
   }, [id, batch?.status])
 
@@ -213,6 +228,31 @@ export default function BatchDetailPage() {
       setFeedError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
     } finally {
       setFeedLoading(false)
+    }
+  }
+
+  const handleRecordExpense = async () => {
+    if (!id || !batch || !expDesc || !expAmount) return
+    setCostLoading(true)
+    setExpError(null)
+    try {
+      await expenseService.recordExpense({
+        farm_id: batch.farm_id,
+        batch_id: id,
+        category: expType === 'feed' ? 'feed' : expType === 'vaccine' ? 'veterinary' : expType === 'medicine' ? 'veterinary' : 'other',
+        expense_type: expType as any,
+        description: expDesc,
+        amount: parseFloat(expAmount),
+        currency: 'UZS',
+      })
+      setExpDesc('')
+      setExpAmount('')
+      loadCostData(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setExpError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setCostLoading(false)
     }
   }
 
@@ -744,6 +784,96 @@ export default function BatchDetailPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cost Tracking Section */}
+      {batch.status === 'active' && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-4">Xarajatlar</h2>
+
+          {/* Cost summary cards */}
+          {costSummary && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+              <SummaryCard label="Jami xarajat (UZS)" value={Number(costSummary.total_uzs).toLocaleString()} />
+              {costSummary.breakdown.feed && (
+                <SummaryCard label="Yem" value={Number(costSummary.breakdown.feed).toLocaleString()} />
+              )}
+              {costSummary.breakdown.vaccine && (
+                <SummaryCard label="Vaktsina" value={Number(costSummary.breakdown.vaccine).toLocaleString()} />
+              )}
+              {costSummary.breakdown.chick && (
+                <SummaryCard label="Jo'ja" value={Number(costSummary.breakdown.chick).toLocaleString()} />
+              )}
+            </div>
+          )}
+
+          {/* Record expense form */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <select
+              value={expType}
+              onChange={(e) => setExpType(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="feed">Yem</option>
+              <option value="vaccine">Vaktsina</option>
+              <option value="medicine">Dori</option>
+              <option value="chick">Jo'ja</option>
+              <option value="other">Boshqa</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Tavsif"
+              value={expDesc}
+              onChange={(e) => setExpDesc(e.target.value)}
+              className="flex-1 min-w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="number"
+              placeholder="Summa (UZS)"
+              value={expAmount}
+              onChange={(e) => setExpAmount(e.target.value)}
+              className="w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <button
+              onClick={handleRecordExpense}
+              disabled={costLoading || !expDesc || !expAmount}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {costLoading ? 'Saqlanmoqda...' : 'Qo\'shish'}
+            </button>
+          </div>
+          {expError && <p className="text-red-500 text-sm mb-3">{expError}</p>}
+
+          {/* Expense history */}
+          {expenses.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sana</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tur</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tavsif</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Summa</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {expenses.map((e) => (
+                    <tr key={e.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-gray-500">{new Date(e.expense_date).toLocaleDateString('uz-UZ')}</td>
+                      <td className="px-3 py-2">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                          {e.expense_type ?? e.category}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-gray-700">{e.description}</td>
+                      <td className="px-3 py-2 text-right font-medium text-gray-900">{Number(e.amount).toLocaleString()} UZS</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

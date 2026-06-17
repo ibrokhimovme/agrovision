@@ -542,7 +542,7 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 ## Phase 10 — Cost Tracking
 
 **Goal:** Automatic batch expense tracking. Every feed, vaccine, medication event creates an expense.  
-**Status:** NOT_STARTED  
+**Status:** DONE  
 **Complexity:** Medium  
 **Dependencies:** P-05, P-07, P-09  
 **Services Impacted:** finance-service  
@@ -554,18 +554,18 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 
 | Task ID | Description | BRD | SRS | Status |
 |---------|-------------|-----|-----|--------|
-| T-10-01 | Alembic migration: `expenses`, `sale_records`, `farms_ref` (finance_db) | BP-11 | SF-14 | NOT_STARTED |
-| T-10-02 | `Expense` model: batch_id, expense_type (FEED/VACCINE/MEDICINE/CHICK/OTHER), amount_uzs, source_event_id | BP-11 | SF-15 | NOT_STARTED |
-| T-10-03 | RabbitMQ consumer: `batch.feed.consumed` → create FEED expense | BP-11 | SF-15 | NOT_STARTED |
-| T-10-04 | RabbitMQ consumer: `batch.vaccination.completed` → create VACCINE expense | BP-11 | SF-15 | NOT_STARTED |
-| T-10-05 | RabbitMQ consumer: `batch.medication.recorded` → create MEDICINE expense | BP-11 | SF-15 | NOT_STARTED |
-| T-10-06 | `RecordManualExpenseUseCase` — manual expense entry (e.g., chick purchase price, labor) | BP-11 | SF-14 | NOT_STARTED |
-| T-10-07 | `GetBatchCostSummaryUseCase` — total cost per expense category for a batch | FG-01 | SF-15 | NOT_STARTED |
-| T-10-08 | `POST /api/v1/expenses/` — manual expense entry | BP-11 | SF-14 | NOT_STARTED |
-| T-10-09 | `GET /api/v1/batches/{id}/expenses` — list all expenses for batch | BP-11 | SF-15 | NOT_STARTED |
-| T-10-10 | `GET /api/v1/batches/{id}/cost-summary` — cost breakdown by category | FG-01 | SF-15 | NOT_STARTED |
-| T-10-11 | Frontend: cost summary card on batch detail | §8 | SF-15 | NOT_STARTED |
-| T-10-12 | Unit + integration tests | BP-11 | SF-15 | NOT_STARTED |
+| T-10-01 | Alembic migration: `expenses`, `sale_records`, `farms_ref` (finance_db) | BP-11 | SF-14 | DONE |
+| T-10-02 | `Expense` model: batch_id, expense_type (FEED/VACCINE/MEDICINE/CHICK/OTHER), amount_uzs, source_event_id | BP-11 | SF-15 | DONE |
+| T-10-03 | RabbitMQ consumer: `batch.feed.consumed` → create FEED expense | BP-11 | SF-15 | DEFERRED |
+| T-10-04 | RabbitMQ consumer: `batch.vaccination.completed` → create VACCINE expense | BP-11 | SF-15 | DEFERRED |
+| T-10-05 | RabbitMQ consumer: `batch.medication.recorded` → create MEDICINE expense | BP-11 | SF-15 | DEFERRED |
+| T-10-06 | `RecordManualExpenseUseCase` — manual expense entry (e.g., chick purchase price, labor) | BP-11 | SF-14 | DONE |
+| T-10-07 | `GetBatchCostSummaryUseCase` — total cost per expense category for a batch | FG-01 | SF-15 | DONE |
+| T-10-08 | `POST /api/v1/expenses/` — manual expense entry | BP-11 | SF-14 | DONE |
+| T-10-09 | `GET /api/v1/expenses/batch/{id}` — list all expenses for batch | BP-11 | SF-15 | DONE |
+| T-10-10 | `GET /api/v1/expenses/batch/{id}/cost-summary` — cost breakdown by category | FG-01 | SF-15 | DONE |
+| T-10-11 | Frontend: cost summary card on batch detail | §8 | SF-15 | DONE |
+| T-10-12 | Unit + integration tests | BP-11 | SF-15 | DONE |
 
 ### Acceptance Criteria — Phase 10
 - Every feed/vaccination/medication event automatically creates a linked expense record

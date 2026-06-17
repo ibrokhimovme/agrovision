@@ -15,6 +15,10 @@ import type {
   VaccinationSchedule,
   WeightSampling,
   GrowthMetrics,
+  Expense,
+  BatchCostSummary,
+  ExpenseCategory,
+  BatchExpenseType,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -217,6 +221,36 @@ export const weightService = {
 
   async getMetrics(batchId: string): Promise<APIResponse<GrowthMetrics>> {
     const resp = await apiClient.get<APIResponse<GrowthMetrics>>(`/batches/${batchId}/weight/metrics`)
+    return resp.data
+  },
+}
+
+export interface RecordExpensePayload {
+  farm_id: string
+  batch_id?: string
+  category: ExpenseCategory
+  expense_type?: BatchExpenseType
+  description: string
+  amount: number
+  currency?: string
+  notes?: string
+}
+
+export const expenseService = {
+  async recordExpense(payload: RecordExpensePayload): Promise<APIResponse<Expense>> {
+    const resp = await apiClient.post<APIResponse<Expense>>('/expenses/', payload)
+    return resp.data
+  },
+
+  async listBatchExpenses(batchId: string, page = 1, page_size = 20): Promise<PaginatedResponse<Expense>> {
+    const resp = await apiClient.get<PaginatedResponse<Expense>>(`/expenses/batch/${batchId}`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+
+  async getBatchCostSummary(batchId: string): Promise<APIResponse<BatchCostSummary>> {
+    const resp = await apiClient.get<APIResponse<BatchCostSummary>>(`/expenses/batch/${batchId}/cost-summary`)
     return resp.data
   },
 }

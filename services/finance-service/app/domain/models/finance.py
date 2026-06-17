@@ -30,6 +30,14 @@ class ExpenseCategory(str, Enum):
     OTHER = "other"
 
 
+class BatchExpenseType(str, Enum):
+    FEED = "feed"
+    VACCINE = "vaccine"
+    MEDICINE = "medicine"
+    CHICK = "chick"
+    OTHER = "other"
+
+
 class PaymentStatus(str, Enum):
     PENDING = "pending"
     PARTIAL = "partial"
@@ -48,10 +56,12 @@ class Expense(Base, UUIDPrimaryKeyMixin, AuditMixin):
 
     farm_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
     category: Mapped[ExpenseCategory] = mapped_column(String(50), nullable=False)
+    expense_type: Mapped[Optional[BatchExpenseType]] = mapped_column(String(20), nullable=True, index=True)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="UZS")
-    batch_id: Mapped[Optional[UUID]] = mapped_column(nullable=True)
+    batch_id: Mapped[Optional[UUID]] = mapped_column(nullable=True, index=True)
+    source_event_id: Mapped[Optional[UUID]] = mapped_column(nullable=True)
     reference_document: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     expense_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     approved_by: Mapped[Optional[UUID]] = mapped_column(nullable=True)

@@ -210,6 +210,33 @@ export interface StockItem {
   is_below_minimum: boolean;
 }
 
+// ── Expenses / Cost Tracking ──────────────────────────────────────────────────
+
+export type ExpenseCategory = 'feed' | 'veterinary' | 'labor' | 'transport' | 'equipment' | 'utilities' | 'depreciation' | 'other'
+export type BatchExpenseType = 'feed' | 'vaccine' | 'medicine' | 'chick' | 'other'
+
+export interface Expense {
+  id: string
+  farm_id: string
+  batch_id?: string
+  category: ExpenseCategory
+  expense_type?: BatchExpenseType
+  description: string
+  amount: number
+  currency: string
+  source_event_id?: string
+  expense_date: string
+  notes?: string
+  created_at: string
+}
+
+export interface BatchCostSummary {
+  batch_id: string
+  total_uzs: number
+  breakdown: Record<string, number>
+  expense_count: number
+}
+
 // ── Finance ───────────────────────────────────────────────────────────────────
 
 export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'written_off';
