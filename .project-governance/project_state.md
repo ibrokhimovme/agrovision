@@ -63,10 +63,10 @@ See `docs/development/commit-conventions.md` for commit format rules.
 
 ```
 Current Date:          2026-06-17
-Current Phase:         P-06 (Mortality Tracking) — NEXT TO EXECUTE
-Last Verified Phase:   P-05 (Feed Consumption) — VERIFIED_COMPLETE
-Overall Progress:      6 / 16 phases verified complete (37.50%)
-Next Action:           Execute Phase 6 — Mortality Tracking
+Current Phase:         P-07 (Vaccination Management) — NEXT TO EXECUTE
+Last Verified Phase:   P-06 (Mortality Tracking) — VERIFIED_COMPLETE
+Overall Progress:      7 / 16 phases verified complete (43.75%)
+Next Action:           Execute Phase 7 — Vaccination Management
 Blocker:               None
 ```
 
@@ -82,7 +82,7 @@ Blocker:               None
 | P-03 | Frontend Foundation | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-04 | Poultry Batch Management | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-05 | Feed Consumption | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
-| P-06 | Mortality Tracking | NOT_STARTED | — | — |
+| P-06 | Mortality Tracking | VERIFIED_COMPLETE | 2026-06-17 | Engineering Steward |
 | P-07 | Vaccination Management | NOT_STARTED | — | — |
 | P-08 | Weight Sampling | NOT_STARTED | — | — |
 | P-09 | Inventory Integration | NOT_STARTED | — | — |
@@ -314,6 +314,7 @@ Blocker:               None
 | P-03 | 2026-06-17 | 2026-06-17 | 1 day | 9 files (see CL-003) |
 | P-04 | 2026-06-17 | 2026-06-17 | 1 day | 30+ files (see CL-004) |
 | P-05 | 2026-06-17 | 2026-06-17 | 1 day | 13 files (see CL-005) |
+| P-06 | 2026-06-17 | 2026-06-17 | 1 day | 12 files (see CL-006) |
 
 ---
 
@@ -441,6 +442,29 @@ Every modification to the project must be recorded here. Never delete entries.
   - `frontend/src/pages/livestock/BatchDetailPage.tsx` (feed form + history table)
 - **Verification:** 13/13 unit tests passed; TypeScript 0 errors; Vite build success (366 kB)
 - **Requirements implemented:** SF-10 (feed management), SF-11 (water simplified), BP-04 (feeding), BP-05 (water)
+- **Services impacted:** livestock-service, frontend
+
+---
+
+### CL-006
+- **Date:** 2026-06-17
+- **Task:** Phase 6 — Mortality Tracking
+- **Files Created:**
+  - `services/livestock-service/migrations/versions/004_add_mortality_records.py`
+  - `services/livestock-service/app/domain/repositories/mortality_repository.py`
+  - `services/livestock-service/app/infrastructure/database/repositories/mortality_repository_impl.py`
+  - `services/livestock-service/app/application/dtos/mortality_dtos.py`
+  - `services/livestock-service/app/application/use_cases/record_mortality.py`
+  - `services/livestock-service/app/application/use_cases/get_mortality_history.py`
+  - `services/livestock-service/app/api/v1/endpoints/mortality.py`
+  - `services/livestock-service/tests/unit/test_record_mortality.py`
+- **Files Modified:**
+  - `services/livestock-service/app/api/v1/router.py` (mortality router included)
+  - `frontend/src/types/index.ts` (MortalityRecord, MortalitySummary types)
+  - `frontend/src/services/batchService.ts` (mortalityService with 3 methods)
+  - `frontend/src/pages/livestock/BatchDetailPage.tsx` (mortality summary, form, history table; SummaryCard color prop)
+- **Verification:** 19/19 unit tests passed; TypeScript 0 errors; Vite build success (371 kB)
+- **Requirements implemented:** SF-18 (mortality tracking), BP-15 (active batch only), BP-16 (count decrement)
 - **Services impacted:** livestock-service, frontend
 
 ---
