@@ -1,2 +1,2 @@
--r ../../shared/requirements-base.txt
+# Base packages installed via shared/requirements-base.txt in Dockerfile
 reportlab==4.2.5
