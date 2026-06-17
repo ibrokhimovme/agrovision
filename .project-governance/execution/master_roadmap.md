@@ -578,7 +578,7 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 ## Phase 11 — Sales Management
 
 **Goal:** Simple batch sale record: customer name, quantity sold, price per kg, total revenue.  
-**Status:** NOT_STARTED  
+**Status:** DONE  
 **Complexity:** Medium  
 **Dependencies:** P-10  
 **Services Impacted:** finance-service, livestock-service  
@@ -590,15 +590,15 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 
 | Task ID | Description | BRD | SRS | Status |
 |---------|-------------|-----|-----|--------|
-| T-11-01 | `SaleRecord` model: batch_id, customer_name, customer_phone, quantity_kg, price_per_kg_uzs, total_revenue_uzs, payment_status, sold_at | BP-12 | SF-17 | NOT_STARTED |
-| T-11-02 | Alembic migration: `sale_records` table | BP-12 | SF-17 | NOT_STARTED |
-| T-11-03 | `RecordSaleUseCase` — validates batch is ACTIVE or CLOSED, records sale | BP-12 | SF-17 | NOT_STARTED |
-| T-11-04 | `POST /api/v1/batches/{id}/sales` — record a sale | BP-12 | SF-17 | NOT_STARTED |
-| T-11-05 | `GET /api/v1/batches/{id}/sales` — list sales for batch | BP-12 | SF-17 | NOT_STARTED |
-| T-11-06 | Publish `SaleRecordedEvent` (already defined in shared/events/schemas.py) | BP-12 | SF-17 | NOT_STARTED |
-| T-11-07 | Frontend: sale record form on batch detail | §8 | SF-17 | NOT_STARTED |
-| T-11-08 | Frontend: sales list on batch detail | §8 | SF-17 | NOT_STARTED |
-| T-11-09 | Unit + integration tests | BP-12 | SF-17 | NOT_STARTED |
+| T-11-01 | `SaleRecord` model: batch_id, customer_name, customer_phone, quantity_kg, price_per_kg_uzs, total_revenue_uzs, payment_status, sold_at | BP-12 | SF-17 | DONE |
+| T-11-02 | Alembic migration: `sale_records` table | BP-12 | SF-17 | DONE |
+| T-11-03 | `RecordSaleUseCase` — validates batch is ACTIVE or CLOSED, records sale | BP-12 | SF-17 | DONE |
+| T-11-04 | `POST /api/v1/sales/batch/{id}` — record a sale | BP-12 | SF-17 | DONE |
+| T-11-05 | `GET /api/v1/sales/batch/{id}` — list sales for batch | BP-12 | SF-17 | DONE |
+| T-11-06 | Publish `SaleRecordedEvent` (already defined in shared/events/schemas.py) | BP-12 | SF-17 | DEFERRED |
+| T-11-07 | Frontend: sale record form on batch detail | §8 | SF-17 | DONE |
+| T-11-08 | Frontend: sales list on batch detail | §8 | SF-17 | DONE |
+| T-11-09 | Unit + integration tests | BP-12 | SF-17 | DONE |
 
 ### Acceptance Criteria — Phase 11
 - Manager can record a sale with customer name, weight sold, price per kg

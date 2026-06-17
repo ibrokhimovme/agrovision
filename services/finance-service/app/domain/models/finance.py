@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Numeric, String, DateTime, Text, Boolean
+from sqlalchemy import ForeignKey, Integer, Numeric, String, DateTime, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.models.base import Base, UUIDPrimaryKeyMixin, AuditMixin
@@ -130,6 +130,32 @@ class Payment(Base, UUIDPrimaryKeyMixin, AuditMixin):
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     order: Mapped["SalesOrder"] = relationship("SalesOrder", back_populates="payments")
+
+
+class SalePaymentStatus(str, Enum):
+    PAID = "paid"
+    PENDING = "pending"
+
+
+class SaleRecord(Base, UUIDPrimaryKeyMixin, AuditMixin):
+    """
+    Simple batch sale record. SF-17, BP-12.
+    MVP alternative to full SalesOrder workflow.
+    total_revenue_uzs = quantity_kg × price_per_kg_uzs (computed on creation).
+    """
+    __tablename__ = "sale_records"
+
+    batch_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    farm_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    customer_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    customer_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    head_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    price_per_kg_uzs: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    total_revenue_uzs: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    payment_status: Mapped[SalePaymentStatus] = mapped_column(String(20), nullable=False, default=SalePaymentStatus.PENDING)
+    sold_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
 class Customer(Base, UUIDPrimaryKeyMixin, AuditMixin):

@@ -19,6 +19,9 @@ import type {
   BatchCostSummary,
   ExpenseCategory,
   BatchExpenseType,
+  SaleRecord,
+  BatchSalesSummary,
+  SalePaymentStatus,
 } from '@/types'
 
 export interface CreateBatchPayload {
@@ -251,6 +254,36 @@ export const expenseService = {
 
   async getBatchCostSummary(batchId: string): Promise<APIResponse<BatchCostSummary>> {
     const resp = await apiClient.get<APIResponse<BatchCostSummary>>(`/expenses/batch/${batchId}/cost-summary`)
+    return resp.data
+  },
+}
+
+export interface RecordSalePayload {
+  farm_id: string
+  customer_name: string
+  customer_phone?: string
+  head_count: number
+  quantity_kg: number
+  price_per_kg_uzs: number
+  payment_status?: SalePaymentStatus
+  notes?: string
+}
+
+export const saleService = {
+  async recordSale(batchId: string, payload: RecordSalePayload): Promise<APIResponse<SaleRecord>> {
+    const resp = await apiClient.post<APIResponse<SaleRecord>>(`/sales/batch/${batchId}`, payload)
+    return resp.data
+  },
+
+  async listSales(batchId: string, page = 1, page_size = 20): Promise<PaginatedResponse<SaleRecord>> {
+    const resp = await apiClient.get<PaginatedResponse<SaleRecord>>(`/sales/batch/${batchId}`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+
+  async getSalesSummary(batchId: string): Promise<APIResponse<BatchSalesSummary>> {
+    const resp = await apiClient.get<APIResponse<BatchSalesSummary>>(`/sales/batch/${batchId}/summary`)
     return resp.data
   },
 }

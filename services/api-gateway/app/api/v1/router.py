@@ -30,6 +30,7 @@ ROUTE_MAP = {
     "/stock-items": settings.INVENTORY_SERVICE_URL,
     "/inventory": settings.INVENTORY_SERVICE_URL,
     "/expenses": settings.FINANCE_SERVICE_URL,
+    "/sales": settings.FINANCE_SERVICE_URL,
     "/revenue": settings.FINANCE_SERVICE_URL,
     "/payments": settings.FINANCE_SERVICE_URL,
     "/notifications": settings.NOTIFICATION_SERVICE_URL,

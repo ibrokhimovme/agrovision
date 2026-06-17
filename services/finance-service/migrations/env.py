@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from app.domain.models.finance import Expense, SalesOrder, SalesOrderLine, Payment, Customer  # noqa: F401
+from app.domain.models.finance import Expense, SalesOrder, SalesOrderLine, Payment, Customer, SaleRecord  # noqa: F401
 from shared.models.base import Base
 
 config = context.config

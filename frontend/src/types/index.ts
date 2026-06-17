@@ -195,6 +195,32 @@ export interface FeedSummary {
   fcr?: number;
 }
 
+// ── Sales ─────────────────────────────────────────────────────────────────────
+
+export type SalePaymentStatus = 'paid' | 'pending'
+
+export interface SaleRecord {
+  id: string
+  batch_id: string
+  farm_id: string
+  customer_name: string
+  customer_phone?: string
+  head_count: number
+  quantity_kg: number
+  price_per_kg_uzs: number
+  total_revenue_uzs: number
+  payment_status: SalePaymentStatus
+  sold_at: string
+  notes?: string
+  created_at: string
+}
+
+export interface BatchSalesSummary {
+  batch_id: string
+  total_revenue_uzs: number
+  sale_count: number
+}
+
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 export type ItemType = 'feed' | 'vaccine' | 'medicine' | 'equipment' | 'packaging' | 'other';

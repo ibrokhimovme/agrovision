@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, expenseService, feedService, mortalityService, vaccinationService, weightService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, BatchCostSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, VaccinationRecord, WeightSampling } from '@/types'
+import { batchService, expenseService, feedService, mortalityService, saleService, vaccinationService, weightService } from '@/services/batchService'
+import type { Batch, BatchCloseReason, BatchCostSummary, BatchSalesSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, SaleRecord, VaccinationRecord, WeightSampling } from '@/types'
 
 const STATUS_LABELS: Record<string, string> = {
   quarantine: 'Karantin',
@@ -84,6 +84,19 @@ export default function BatchDetailPage() {
   const [expType, setExpType] = useState('other')
   const [expError, setExpError] = useState<string | null>(null)
 
+  // Sales state
+  const [salesRecords, setSalesRecords] = useState<SaleRecord[]>([])
+  const [salesSummary, setSalesSummary] = useState<BatchSalesSummary | null>(null)
+  const [saleLoading, setSaleLoading] = useState(false)
+  const [saleError, setSaleError] = useState<string | null>(null)
+  const [saleName, setSaleName] = useState('')
+  const [salePhone, setSalePhone] = useState('')
+  const [saleHeads, setSaleHeads] = useState('')
+  const [saleQty, setSaleQty] = useState('')
+  const [salePrice, setSalePrice] = useState('')
+  const [salePayment, setSalePayment] = useState<'paid' | 'pending'>('paid')
+  const [saleNotes, setSaleNotes] = useState('')
+
   useEffect(() => {
     if (!id) return
     batchService
@@ -117,6 +130,11 @@ export default function BatchDetailPage() {
     expenseService.listBatchExpenses(batchId, 1, 20).then((res) => setExpenses(res.data)).catch(() => {})
   }
 
+  const loadSalesData = (batchId: string) => {
+    saleService.listSales(batchId, 1, 20).then((res) => setSalesRecords(res.data)).catch(() => {})
+    saleService.getSalesSummary(batchId).then((res) => setSalesSummary(res.data)).catch(() => {})
+  }
+
   useEffect(() => {
     if (id && batch?.status === 'active') {
       loadFeedData(id)
@@ -124,6 +142,7 @@ export default function BatchDetailPage() {
       loadVaccinations(id)
       loadWeightData(id)
       loadCostData(id)
+      loadSalesData(id)
     }
   }, [id, batch?.status])
 
@@ -228,6 +247,36 @@ export default function BatchDetailPage() {
       setFeedError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
     } finally {
       setFeedLoading(false)
+    }
+  }
+
+  const handleRecordSale = async () => {
+    if (!id || !batch || !saleName || !saleHeads || !saleQty || !salePrice) return
+    setSaleLoading(true)
+    setSaleError(null)
+    try {
+      await saleService.recordSale(id, {
+        farm_id: batch.farm_id,
+        customer_name: saleName,
+        customer_phone: salePhone || undefined,
+        head_count: parseInt(saleHeads),
+        quantity_kg: parseFloat(saleQty),
+        price_per_kg_uzs: parseFloat(salePrice),
+        payment_status: salePayment,
+        notes: saleNotes || undefined,
+      })
+      setSaleName('')
+      setSalePhone('')
+      setSaleHeads('')
+      setSaleQty('')
+      setSalePrice('')
+      setSaleNotes('')
+      loadSalesData(id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setSaleError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setSaleLoading(false)
     }
   }
 
@@ -784,6 +833,128 @@ export default function BatchDetailPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sales Section */}
+      {batch.status === 'active' && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-4">Sotuvlar</h2>
+
+          {/* Sales summary */}
+          {salesSummary && salesSummary.sale_count > 0 && (
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <SummaryCard label="Jami tushum (UZS)" value={Number(salesSummary.total_revenue_uzs).toLocaleString()} />
+              <SummaryCard label="Sotuvlar soni" value={String(salesSummary.sale_count)} />
+            </div>
+          )}
+
+          {/* Live total preview */}
+          {saleQty && salePrice && (
+            <div className="mb-3 px-3 py-2 bg-green-50 rounded-lg text-sm text-green-700">
+              Jami: {(parseFloat(saleQty) * parseFloat(salePrice)).toLocaleString()} UZS
+            </div>
+          )}
+
+          {/* Record sale form */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+            <input
+              placeholder="Xaridor ismi *"
+              value={saleName}
+              onChange={(e) => setSaleName(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              placeholder="Telefon"
+              value={salePhone}
+              onChange={(e) => setSalePhone(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="number"
+              placeholder="Bosh soni *"
+              value={saleHeads}
+              onChange={(e) => setSaleHeads(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="number"
+              placeholder="Og'irlik (kg) *"
+              value={saleQty}
+              onChange={(e) => setSaleQty(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <input
+              type="number"
+              placeholder="Narx (UZS/kg) *"
+              value={salePrice}
+              onChange={(e) => setSalePrice(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <select
+              value={salePayment}
+              onChange={(e) => setSalePayment(e.target.value as 'paid' | 'pending')}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="paid">To'langan</option>
+              <option value="pending">Kutilmoqda</option>
+            </select>
+          </div>
+          <div className="flex gap-2 mb-4">
+            <input
+              placeholder="Izoh (ixtiyoriy)"
+              value={saleNotes}
+              onChange={(e) => setSaleNotes(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <button
+              onClick={handleRecordSale}
+              disabled={saleLoading || !saleName || !saleHeads || !saleQty || !salePrice}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              {saleLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+          {saleError && <p className="text-red-500 text-sm mb-3">{saleError}</p>}
+
+          {/* Sales history */}
+          {salesRecords.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-100 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sana</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Xaridor</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Bosh</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Og'irlik</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Narx/kg</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Jami</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase">To'lov</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {salesRecords.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-gray-500">{new Date(s.sold_at).toLocaleDateString('uz-UZ')}</td>
+                      <td className="px-3 py-2 text-gray-900">
+                        {s.customer_name}
+                        {s.customer_phone && <span className="block text-xs text-gray-400">{s.customer_phone}</span>}
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-700">{s.head_count.toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-gray-700">{Number(s.quantity_kg).toFixed(1)} kg</td>
+                      <td className="px-3 py-2 text-right text-gray-700">{Number(s.price_per_kg_uzs).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-gray-900">{Number(s.total_revenue_uzs).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {s.payment_status === 'paid' ? "To'langan" : "Kutilmoqda"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
