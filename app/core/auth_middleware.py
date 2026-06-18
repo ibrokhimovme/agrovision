@@ -102,6 +102,16 @@ class AuthHeaderInjectionMiddleware:
                 b"x-user-id": str(payload.get("sub", "")).encode(),
                 b"x-user-roles": ",".join(payload.get("roles", [])).encode(),
                 b"x-farm-id": str(payload.get("farm_id", "")).encode(),
+                # EX-02 (execution-v2): account_id is None for an
+                # account-less user (e.g. platform super-admin), so this
+                # uses `or ""` rather than `str(...)` to avoid encoding the
+                # literal text "None" into the header — unlike x-farm-id
+                # above (a pre-existing, currently-unconsumed header left
+                # unchanged here, out of this phase's scope), x-account-id
+                # IS parsed downstream by app/farm's endpoints, so the
+                # "None"-string quirk would be a real bug here, not a latent
+                # no-op.
+                b"x-account-id": (payload.get("account_id") or "").encode(),
             }
             headers = [(k, v) for k, v in scope["headers"] if k.lower() not in injected]
             headers.extend(injected.items())
