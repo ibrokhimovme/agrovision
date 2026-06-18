@@ -23,7 +23,12 @@ class FarmType(str, Enum):
 
 
 class SectionType(str, Enum):
-    QUARANTINE = "quarantine"
+    # EX-03 (Building & Section Simplification, execution-v2): QUARANTINE
+    # removed per decision_log.md BMD-002 — quarantine workflows are removed
+    # entirely, both as a batch status (EX-04) and as this place/type
+    # concept. ISOLATION is explicitly retained (a narrower, distinct
+    # sick-bird-isolation concept, not the mandatory new-arrival holding
+    # period BMD-002 removed).
     PRODUCTION = "production"
     ISOLATION = "isolation"
     STORAGE = "storage"
@@ -49,6 +54,16 @@ class Farm(Base, UUIDPrimaryKeyMixin, AuditMixin):
     address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     region: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     owner_user_id: Mapped[UUID] = mapped_column(nullable=False)
+    # EX-01 (Account Foundation, execution-v2): Farm now belongs to an
+    # Account (Account -> Farm -> Building -> Batch priority chain, per
+    # decision_log.md BMD-001). Nullable for now and left alongside
+    # owner_user_id rather than replacing it — backfilled for all existing
+    # farms by infrastructure/postgres/migrations_v2/001_ex01_account_foundation.sql,
+    # but making it NOT NULL and wiring it into create/update use cases is
+    # EX-02 scope, not this phase's.
+    account_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("identity.accounts.id"), nullable=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -60,7 +75,7 @@ class Farm(Base, UUIDPrimaryKeyMixin, AuditMixin):
 class Building(Base, UUIDPrimaryKeyMixin, AuditMixin):
     """
     Physical building within a farm.
-    Examples: Poultry House 1, Cattle Barn A, Quarantine Block.
+    Examples: Poultry House 1, Feed Storage Building.
     """
     __tablename__ = "buildings"
     __table_args__ = {"schema": "farm"}
@@ -80,8 +95,7 @@ class Building(Base, UUIDPrimaryKeyMixin, AuditMixin):
 
 class Section(Base, UUIDPrimaryKeyMixin, AuditMixin):
     """
-    Section within a building. Sections hold batches or individual animals.
-    SectionType.QUARANTINE maps directly to quarantine protocol BP-03.
+    Section within a building. Sections hold batches.
     """
     __tablename__ = "sections"
     __table_args__ = {"schema": "farm"}

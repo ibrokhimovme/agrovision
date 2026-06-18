@@ -30,16 +30,26 @@ from shared.contracts.api_standards import APIResponse, PaginatedResponse, Pagin
 router = APIRouter(prefix="/farms", tags=["Farms"])
 
 
+def _is_superuser(x_user_roles: str) -> bool:
+    """EX-02 (execution-v2): the bypass condition for account scoping must
+    be the actual super_admin role, not "account_id is absent" — live
+    verification during this phase found a real super-admin account that
+    legitimately owns an Account too, so the two are not equivalent."""
+    return "super_admin" in [r.strip() for r in x_user_roles.split(",") if r.strip()]
+
+
 @router.post("/", response_model=APIResponse[FarmResponse], status_code=201)
 async def create_farm(
     body: CreateFarmRequest,
     x_user_id: str = Header(..., alias="X-User-Id", description="Owner user ID from api-gateway"),
+    x_account_id: str = Header(default="", alias="X-Account-Id", description="Caller's Account ID (EX-02, execution-v2); empty for an account-less caller"),
     db: AsyncSession = Depends(get_db),
 ):
     owner_user_id = UUID(x_user_id)
+    account_id = UUID(x_account_id) if x_account_id else None
     repo = SQLAlchemyFarmRepository(db)
     use_case = CreateFarmUseCase(repo)
-    farm = await use_case.execute(body, owner_user_id)
+    farm = await use_case.execute(body, owner_user_id, account_id)
     return APIResponse(data=FarmResponse.model_validate(farm))
 
 
@@ -47,11 +57,14 @@ async def create_farm(
 async def list_farms(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    x_account_id: str = Header(default="", alias="X-Account-Id", description="Caller's Account ID (EX-02, execution-v2); empty for an account-less caller"),
+    x_user_roles: str = Header(default="", alias="X-User-Roles"),
     db: AsyncSession = Depends(get_db),
 ):
+    account_id = UUID(x_account_id) if x_account_id else None
     repo = SQLAlchemyFarmRepository(db)
     use_case = ListFarmsUseCase(repo)
-    farms, total = await use_case.execute(page, page_size)
+    farms, total = await use_case.execute(page, page_size, account_id, _is_superuser(x_user_roles))
 
     total_pages = math.ceil(total / page_size) if total > 0 else 1
     pagination = PaginationMeta(
@@ -71,11 +84,14 @@ async def list_farms(
 @router.get("/{farm_id}", response_model=APIResponse[FarmResponse])
 async def get_farm(
     farm_id: UUID,
+    x_account_id: str = Header(default="", alias="X-Account-Id", description="Caller's Account ID (EX-02, execution-v2); empty for an account-less caller"),
+    x_user_roles: str = Header(default="", alias="X-User-Roles"),
     db: AsyncSession = Depends(get_db),
 ):
+    account_id = UUID(x_account_id) if x_account_id else None
     repo = SQLAlchemyFarmRepository(db)
     use_case = GetFarmUseCase(repo)
-    farm = await use_case.execute(farm_id)
+    farm = await use_case.execute(farm_id, account_id, _is_superuser(x_user_roles))
     return APIResponse(data=FarmResponse.model_validate(farm))
 
 
@@ -83,22 +99,28 @@ async def get_farm(
 async def update_farm(
     farm_id: UUID,
     body: UpdateFarmRequest,
+    x_account_id: str = Header(default="", alias="X-Account-Id", description="Caller's Account ID (EX-02, execution-v2); empty for an account-less caller"),
+    x_user_roles: str = Header(default="", alias="X-User-Roles"),
     db: AsyncSession = Depends(get_db),
 ):
+    account_id = UUID(x_account_id) if x_account_id else None
     repo = SQLAlchemyFarmRepository(db)
     use_case = UpdateFarmUseCase(repo)
-    farm = await use_case.execute(farm_id, body)
+    farm = await use_case.execute(farm_id, body, account_id, _is_superuser(x_user_roles))
     return APIResponse(data=FarmResponse.model_validate(farm))
 
 
 @router.delete("/{farm_id}", status_code=204)
 async def delete_farm(
     farm_id: UUID,
+    x_account_id: str = Header(default="", alias="X-Account-Id", description="Caller's Account ID (EX-02, execution-v2); empty for an account-less caller"),
+    x_user_roles: str = Header(default="", alias="X-User-Roles"),
     db: AsyncSession = Depends(get_db),
 ):
+    account_id = UUID(x_account_id) if x_account_id else None
     repo = SQLAlchemyFarmRepository(db)
     use_case = DeleteFarmUseCase(repo)
-    await use_case.execute(farm_id)
+    await use_case.execute(farm_id, account_id, _is_superuser(x_user_roles))
 
 
 @router.get("/{farm_id}/buildings", response_model=APIResponse[list[BuildingResponse]])

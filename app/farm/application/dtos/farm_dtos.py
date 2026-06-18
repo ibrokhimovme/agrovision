@@ -34,6 +34,10 @@ class FarmResponse(BaseModel):
     address: Optional[str]
     region: Optional[str]
     owner_user_id: UUID
+    # EX-02 (execution-v2): read-only exposure of the owning Account.
+    # Never settable from CreateFarmRequest/UpdateFarmRequest — derived
+    # server-side from the caller's X-Account-Id, not client input.
+    account_id: Optional[UUID] = None
     is_active: bool
     notes: Optional[str]
     created_at: datetime

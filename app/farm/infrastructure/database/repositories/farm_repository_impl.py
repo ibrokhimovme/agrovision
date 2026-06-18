@@ -15,14 +15,25 @@ class SQLAlchemyFarmRepository(AbstractFarmRepository):
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, farm_id: UUID) -> Optional[Farm]:
-        result = await self._session.execute(
-            select(Farm).where(Farm.id == farm_id)
-        )
+    async def get_by_id(self, farm_id: UUID, account_id: Optional[UUID] = None) -> Optional[Farm]:
+        # EX-02 (execution-v2): when the caller has an Account (account_id
+        # is not None), a farm belonging to a different Account is treated
+        # exactly like a farm that doesn't exist (None), not a distinct
+        # "forbidden" case — avoids leaking existence of other accounts'
+        # farms. An account-less caller (e.g. platform super-admin) is
+        # unrestricted, preserving existing oversight behavior.
+        query = select(Farm).where(Farm.id == farm_id)
+        if account_id is not None:
+            query = query.where(Farm.account_id == account_id)
+        result = await self._session.execute(query)
         return result.scalar_one_or_none()
 
-    async def list_active(self, page: int, page_size: int) -> tuple[list[Farm], int]:
+    async def list_active(
+        self, page: int, page_size: int, account_id: Optional[UUID] = None
+    ) -> tuple[list[Farm], int]:
         base_query = select(Farm).where(Farm.is_active == True)  # noqa: E712
+        if account_id is not None:
+            base_query = base_query.where(Farm.account_id == account_id)
 
         total_result = await self._session.execute(
             select(func.count()).select_from(base_query.subquery())
