@@ -71,3 +71,18 @@ class SQLAlchemyExpenseRepository(AbstractExpenseRepository):
         )
         val = result.scalar_one_or_none()
         return val if val is not None else Decimal("0")
+
+    async def update(self, expense: Expense) -> Expense:
+        await self._session.commit()
+        await self._session.refresh(expense)
+        return expense
+
+    async def list_outstanding_by_farm(self, farm_id: UUID) -> list[Expense]:
+        result = await self._session.execute(
+            select(Expense).where(
+                Expense.farm_id == farm_id,
+                Expense.supplier_id.is_not(None),
+                Expense.amount_paid < Expense.amount,
+            )
+        )
+        return list(result.scalars().all())

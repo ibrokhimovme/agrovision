@@ -26,3 +26,11 @@ class AbstractSaleRepository(ABC):
 
     @abstractmethod
     async def total_revenue_by_batch(self, batch_id: UUID) -> Decimal: ...
+
+    @abstractmethod
+    async def update(self, sale: SaleRecord) -> SaleRecord: ...
+
+    @abstractmethod
+    async def list_outstanding_by_farm(self, farm_id: UUID) -> list[SaleRecord]:
+        """EX-11 (execution-v2): sales with amount_paid < total_revenue_uzs, for the debtor summary."""
+        ...

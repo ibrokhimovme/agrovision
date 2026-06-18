@@ -31,3 +31,12 @@ class AbstractExpenseRepository(ABC):
 
     @abstractmethod
     async def total_by_batch(self, batch_id: UUID) -> Decimal: ...
+
+    @abstractmethod
+    async def update(self, expense: Expense) -> Expense: ...
+
+    @abstractmethod
+    async def list_outstanding_by_farm(self, farm_id: UUID) -> list[Expense]:
+        """EX-11 (execution-v2): expenses with amount_paid < amount and a
+        supplier_id set, for the creditor summary."""
+        ...

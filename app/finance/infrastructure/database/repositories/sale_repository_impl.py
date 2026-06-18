@@ -55,3 +55,17 @@ class SQLAlchemySaleRepository(AbstractSaleRepository):
         )
         val = result.scalar_one_or_none()
         return val if val is not None else Decimal("0")
+
+    async def update(self, sale: SaleRecord) -> SaleRecord:
+        await self._session.commit()
+        await self._session.refresh(sale)
+        return sale
+
+    async def list_outstanding_by_farm(self, farm_id: UUID) -> list[SaleRecord]:
+        result = await self._session.execute(
+            select(SaleRecord).where(
+                SaleRecord.farm_id == farm_id,
+                SaleRecord.amount_paid < SaleRecord.total_revenue_uzs,
+            )
+        )
+        return list(result.scalars().all())

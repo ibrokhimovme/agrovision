@@ -46,11 +46,31 @@ class PaymentStatus(str, Enum):
     WRITTEN_OFF = "written_off"
 
 
+class Supplier(Base, UUIDPrimaryKeyMixin, AuditMixin):
+    """
+    Supplier registry. EX-11 (Finance Improvements, execution-v2):
+    supplier debt tracking, per decision_log.md BMD-015.
+    """
+    __tablename__ = "suppliers"
+
+    farm_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
 class Expense(Base, UUIDPrimaryKeyMixin, AuditMixin):
     """
     An expense record. Every transaction backed by a primary document.
     BP-11: approval authorities respected.
     FG-01: expenses allocated to batches for cost calculation.
+
+    EX-11 (execution-v2): supplier_id/amount_paid added for supplier debt
+    and partial-payment tracking (decision_log.md BMD-015). amount_paid
+    defaults to the full amount (i.e. "already settled") so existing
+    expense-recording behavior is unchanged unless a supplier debt is
+    explicitly declared at creation time.
     """
     __tablename__ = "expenses"
 
@@ -61,11 +81,27 @@ class Expense(Base, UUIDPrimaryKeyMixin, AuditMixin):
     amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False, default="UZS")
     batch_id: Mapped[Optional[UUID]] = mapped_column(nullable=True, index=True)
+    supplier_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("suppliers.id"), nullable=True, index=True
+    )
+    amount_paid: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=Decimal("0"))
     source_event_id: Mapped[Optional[UUID]] = mapped_column(nullable=True)
     reference_document: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     expense_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     approved_by: Mapped[Optional[UUID]] = mapped_column(nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    @property
+    def outstanding_amount(self) -> Decimal:
+        return self.amount - self.amount_paid
+
+    @property
+    def payment_status(self) -> str:
+        if self.amount_paid <= 0:
+            return "pending"
+        if self.amount_paid >= self.amount:
+            return "paid"
+        return "partial"
 
 
 class SalesOrder(Base, UUIDPrimaryKeyMixin, AuditMixin):
@@ -135,6 +171,7 @@ class Payment(Base, UUIDPrimaryKeyMixin, AuditMixin):
 class SalePaymentStatus(str, Enum):
     PAID = "paid"
     PENDING = "pending"
+    PARTIAL = "partial"  # EX-11 (execution-v2): added per decision_log.md BMD-015
 
 
 class SaleRecord(Base, UUIDPrimaryKeyMixin, AuditMixin):
@@ -142,6 +179,11 @@ class SaleRecord(Base, UUIDPrimaryKeyMixin, AuditMixin):
     Simple batch sale record. SF-17, BP-12.
     MVP alternative to full SalesOrder workflow.
     total_revenue_uzs = quantity_kg × price_per_kg_uzs (computed on creation).
+
+    EX-11 (execution-v2): amount_paid added for customer debt and
+    partial-payment tracking (decision_log.md BMD-015). payment_status is
+    always server-computed from amount_paid vs total_revenue_uzs, never
+    set directly by the client, to avoid the two ever disagreeing.
     """
     __tablename__ = "sale_records"
 
@@ -153,9 +195,14 @@ class SaleRecord(Base, UUIDPrimaryKeyMixin, AuditMixin):
     quantity_kg: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     price_per_kg_uzs: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
     total_revenue_uzs: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False)
+    amount_paid: Mapped[Decimal] = mapped_column(Numeric(15, 2), nullable=False, default=Decimal("0"))
     payment_status: Mapped[SalePaymentStatus] = mapped_column(String(20), nullable=False, default=SalePaymentStatus.PENDING)
     sold_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    @property
+    def outstanding_amount(self) -> Decimal:
+        return self.total_revenue_uzs - self.amount_paid
 
 
 class Customer(Base, UUIDPrimaryKeyMixin, AuditMixin):

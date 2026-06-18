@@ -12,10 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.finance.application.dtos.sale_dtos import (
     BatchSalesSummaryResponse,
+    RecordSalePaymentRequest,
     RecordSaleRequest,
     SaleRecordResponse,
 )
 from app.finance.application.use_cases.record_sale import RecordSaleUseCase
+from app.finance.application.use_cases.record_sale_payment import RecordSalePaymentUseCase
 from app.finance.infrastructure.database.repositories.sale_repository_impl import SQLAlchemySaleRepository
 from app.finance.infrastructure.database.session import get_db
 from shared.contracts.api_standards import APIResponse, PaginatedResponse, PaginationMeta
@@ -85,3 +87,18 @@ async def batch_sales_summary(
         total_revenue_uzs=total_revenue,
         sale_count=count,
     ))
+
+
+@router.patch(
+    "/sales/{sale_id}/payment",
+    response_model=APIResponse[SaleRecordResponse],
+    tags=["Sales"],
+)
+async def record_sale_payment(
+    sale_id: UUID,
+    body: RecordSalePaymentRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    sale_repo = SQLAlchemySaleRepository(db)
+    result = await RecordSalePaymentUseCase(sale_repo).execute(sale_id, body)
+    return APIResponse(data=result)

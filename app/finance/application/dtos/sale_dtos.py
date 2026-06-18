@@ -21,6 +21,10 @@ class RecordSaleRequest(BaseModel):
     quantity_kg: Decimal
     price_per_kg_uzs: Decimal
     payment_status: SalePaymentStatus = SalePaymentStatus.PENDING
+    # EX-11 (execution-v2): optional exact paid amount, for partial-payment
+    # tracking. If omitted, derived from payment_status for backward
+    # compatibility (PAID -> full amount, PENDING/PARTIAL -> 0).
+    amount_paid: Optional[Decimal] = None
     sold_at: Optional[datetime] = None
     notes: Optional[str] = None
 
@@ -39,6 +43,17 @@ class RecordSaleRequest(BaseModel):
         return v
 
 
+class RecordSalePaymentRequest(BaseModel):
+    amount: Decimal
+
+    @field_validator("amount")
+    @classmethod
+    def must_be_positive(cls, v: Decimal) -> Decimal:
+        if v <= 0:
+            raise ValueError("amount must be positive")
+        return v
+
+
 class SaleRecordResponse(BaseModel):
     id: UUID
     batch_id: UUID
@@ -49,6 +64,8 @@ class SaleRecordResponse(BaseModel):
     quantity_kg: Decimal
     price_per_kg_uzs: Decimal
     total_revenue_uzs: Decimal
+    amount_paid: Decimal
+    outstanding_amount: Decimal
     payment_status: SalePaymentStatus
     sold_at: datetime
     notes: Optional[str]

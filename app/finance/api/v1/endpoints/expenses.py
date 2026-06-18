@@ -12,9 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.finance.application.dtos.expense_dtos import (
     BatchCostSummaryResponse,
     ExpenseResponse,
+    RecordExpensePaymentRequest,
     RecordManualExpenseRequest,
 )
 from app.finance.application.use_cases.get_batch_cost_summary import GetBatchCostSummaryUseCase
+from app.finance.application.use_cases.record_expense_payment import RecordExpensePaymentUseCase
 from app.finance.application.use_cases.record_manual_expense import RecordManualExpenseUseCase
 from app.finance.infrastructure.database.repositories.expense_repository_impl import SQLAlchemyExpenseRepository
 from app.finance.infrastructure.database.session import get_db
@@ -79,3 +81,18 @@ async def batch_cost_summary(
     expense_repo = SQLAlchemyExpenseRepository(db)
     summary = await GetBatchCostSummaryUseCase(expense_repo).execute(batch_id)
     return APIResponse(data=summary)
+
+
+@router.patch(
+    "/expenses/{expense_id}/payment",
+    response_model=APIResponse[ExpenseResponse],
+    tags=["Expenses"],
+)
+async def record_expense_payment(
+    expense_id: UUID,
+    body: RecordExpensePaymentRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    expense_repo = SQLAlchemyExpenseRepository(db)
+    result = await RecordExpensePaymentUseCase(expense_repo).execute(expense_id, body)
+    return APIResponse(data=result)
