@@ -4,10 +4,9 @@ AgroVision Seed Configuration
 All hardcoded UUIDs and constants for cross-service referential integrity.
 
 Business Scenario: Toshkent Broiler Ferma
-  - 5000 broiler chicks arrived April 6, 2026
-  - Quarantine until April 13, 2026
-  - Active production April 13 – May 18, 2026 (42 days)
-  - Sold May 18, 2026 → batch CLOSED
+  - 5000 broiler chicks arrived April 6, 2026, placed directly ACTIVE
+  - Active production April 6 – May 18, 2026 (42 days)
+  - Sold May 18, 2026 → batch COMPLETED
   - Full lifecycle data: feed, mortality, vaccinations, expenses, profit
 """
 from uuid import UUID
@@ -66,6 +65,9 @@ USER_ACCOUNTANT_ID   = UUID("aaaaaaaa-0001-0000-0000-000000000004")
 USER_WORKER_ID       = UUID("aaaaaaaa-0001-0000-0000-000000000005")
 USER_VET_ID          = UUID("aaaaaaaa-0001-0000-0000-000000000006")
 
+# Identity — Accounts (EX-01, execution-v2: Account Foundation)
+ACCOUNT_TOSHKENT_BROILER_ID = UUID("11111111-0000-0000-0000-000000000001")
+
 # Identity — Roles
 ROLE_SUPER_ADMIN_ID  = UUID("bbbbbbbb-0002-0000-0000-000000000001")
 ROLE_FARM_OWNER_ID   = UUID("bbbbbbbb-0002-0000-0000-000000000002")
@@ -75,11 +77,11 @@ ROLE_WORKER_ID       = UUID("bbbbbbbb-0002-0000-0000-000000000005")
 ROLE_VET_ID          = UUID("bbbbbbbb-0002-0000-0000-000000000006")
 
 # Farm
+# EX-03 (execution-v2): BUILDING_QUARANTINE_ID / SECTION_QUARANTINE_ID
+# removed along with the quarantine demo data (decision_log.md BMD-002).
 FARM_ID              = UUID("cccccccc-0003-0000-0000-000000000001")
-BUILDING_QUARANTINE_ID = UUID("cccccccc-0003-0000-0000-000000000002")
 BUILDING_BROILER_1_ID  = UUID("cccccccc-0003-0000-0000-000000000003")
 BUILDING_STORAGE_ID    = UUID("cccccccc-0003-0000-0000-000000000004")
-SECTION_QUARANTINE_ID  = UUID("cccccccc-0003-0000-0000-000000000005")
 SECTION_PROD_A_ID      = UUID("cccccccc-0003-0000-0000-000000000006")
 SECTION_PROD_B_ID      = UUID("cccccccc-0003-0000-0000-000000000007")
 
@@ -115,7 +117,6 @@ def d(offset_from_batch: int) -> datetime:
 
 
 BATCH_ARRIVAL    = d(0)   # April 6, 2026
-BATCH_ACTIVATED  = d(7)   # April 13, 2026 (quarantine end)
 BATCH_CLOSED     = d(42)  # May 18, 2026
 FARM_SETUP_DATE  = d(-10) # March 27, 2026 — farm setup / inventory received
 

@@ -63,17 +63,13 @@ async def verify_farm(conn: asyncpg.Connection) -> None:
         check("Farm type is poultry", row["farm_type"] == "poultry",
               f"got {row['farm_type']}")
 
+    # EX-03 (execution-v2): quarantine building/section removed per
+    # decision_log.md BMD-002 — seed now creates 2 buildings / 2 sections.
     row = await conn.fetchrow("SELECT COUNT(*) AS c FROM buildings WHERE farm_id = $1", FARM_ID)
-    check("3 buildings", row["c"] == 3, f"found {row['c']}")
+    check("2 buildings", row["c"] == 2, f"found {row['c']}")
 
     row = await conn.fetchrow("SELECT COUNT(*) AS c FROM sections WHERE farm_id = $1", FARM_ID)
-    check("3 sections", row["c"] == 3, f"found {row['c']}")
-
-    row = await conn.fetchrow(
-        "SELECT COUNT(*) AS c FROM sections WHERE farm_id = $1 AND section_type = 'quarantine'",
-        FARM_ID
-    )
-    check("1 quarantine section", row["c"] == 1, f"found {row['c']}")
+    check("2 sections", row["c"] == 2, f"found {row['c']}")
 
     row = await conn.fetchrow(
         "SELECT COUNT(*) AS c FROM sections WHERE farm_id = $1 AND section_type = 'production'",
@@ -88,7 +84,7 @@ async def verify_livestock(conn: asyncpg.Connection) -> None:
     row = await conn.fetchrow("SELECT * FROM batches WHERE id = $1", BATCH_A_ID)
     check("Batch B-2026-001 exists", row is not None)
     if row:
-        check("Batch status = closed", row["status"] == "closed",
+        check("Batch status = completed", row["status"] == "completed",
               f"status={row['status']}")
         check("Initial count = 5000", row["initial_count"] == 5000,
               f"got {row['initial_count']}")

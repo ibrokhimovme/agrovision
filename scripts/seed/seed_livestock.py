@@ -2,7 +2,7 @@
 Livestock Service Seed
 =======================
 Creates the full lifecycle of Batch B-2026-001:
-  - 1 batch (5000 broiler chicks → closed after sale)
+  - 1 batch (5000 broiler chicks → completed after sale)
   - 8 mortality records (total 42 dead)
   - 6 weight samplings (growth curve from 0.18 kg to 2.81 kg)
   - 3 vaccination schedules (IBD, Newcastle, IB)
@@ -69,19 +69,19 @@ async def run(conn: asyncpg.Connection) -> None:
         INSERT INTO batches
           (id, farm_id, section_id, species, status, batch_code,
            initial_count, current_count,
-           placement_date, quarantine_end_date, closed_at, close_reason,
+           placement_date, closed_at, close_reason,
            supplier_name, chick_price_per_head, notes,
            created_at, updated_at, created_by, updated_by)
-        VALUES ($1,$2,$3,'broiler','closed','B-2026-001',
+        VALUES ($1,$2,$3,'broiler','completed','B-2026-001',
                 $4,$5,
-                $6,$7,$8,'sale',
+                $6,$7,'sale',
                 'Samarqand Inkubator MChJ', 4500.00,
                 'Aprel 2026 tsikli. Ross-308 zoti. FCR 1.38. Muvaffaqiyatli tsikl.',
-                $6,$8,$9,$9)
+                $6,$7,$8,$8)
         ON CONFLICT (id) DO NOTHING
     """, BATCH_A_ID, FARM_ID, SECTION_PROD_A_ID,
          INITIAL_CHICK_COUNT, CURRENT_COUNT,
-         BATCH_ARRIVAL, BATCH_ACTIVATED, BATCH_CLOSED,
+         BATCH_ARRIVAL, BATCH_CLOSED,
          USER_MANAGER_ID)
 
     # ── Mortality records ──────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ async def run(conn: asyncpg.Connection) -> None:
     print("  → Weight samplings (6 records, growth curve)...")
     samplings = [
         # (day, sample_size, avg_weight_kg, age_days)
-        (7,  100, "0.180", 7,  "Karantin davri oxiri. O'sish normal."),
+        (7,  100, "0.180", 7,  "Birinchi hafta yakuni. O'sish normal."),
         (14, 100, "0.395", 14, "Starter fazasi o'rtasi. Kutilgan o'sishga mos."),
         (21, 100, "0.872", 21, "Grower fazasiga o'tish. FCR hisoblandi: 1.32"),
         (28, 100, "1.428", 28, "O'sish sur'ati yaxshi. Yem konversiyasi samarali."),

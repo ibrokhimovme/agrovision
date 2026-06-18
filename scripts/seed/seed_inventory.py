@@ -51,7 +51,7 @@ async def run(conn: asyncpg.Connection) -> None:
          "Yem-xashak saqlanadigan asosiy ombor. Quruq, shamollatilgan."),
         (WAREHOUSE_VET_ID, FARM_ID,
          "Veterinariya ombori",
-         "Karantin bloki yonida",
+         "Ozuqa ombori binosida",
          "Vaksinalar, dorilar va veterinariya jihozlari uchun maxsus ombor. +4°C saqlash."),
     ]
     for wh in warehouses:

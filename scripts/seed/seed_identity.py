@@ -238,6 +238,26 @@ async def run(conn: asyncpg.Connection) -> None:
                 ON CONFLICT DO NOTHING
             """, u["id"], role_id)
 
+    print("  → Account (EX-01, execution-v2)...")
+    await conn.execute("""
+        INSERT INTO accounts (id, name, owner_user_id, is_active, created_at, updated_at, created_by, updated_by)
+        VALUES ($1, $2, $3, true, NOW(), NOW(), $4, $4)
+        ON CONFLICT (id) DO NOTHING
+    """, ACCOUNT_TOSHKENT_BROILER_ID, "Toshkent Broiler Ferma — Account",
+         USER_FARM_OWNER_ID, USER_SUPER_ADMIN_ID)
+
+    print("  → User account assignments...")
+    # Owner and farm staff belong to the one seeded Account. The platform
+    # super-admin belongs to no Account (account_id stays NULL).
+    account_scoped_user_ids = [
+        USER_FARM_OWNER_ID, USER_MANAGER_ID, USER_ACCOUNTANT_ID,
+        USER_WORKER_ID, USER_VET_ID,
+    ]
+    for uid in account_scoped_user_ids:
+        await conn.execute("""
+            UPDATE users SET account_id = $1 WHERE id = $2
+        """, ACCOUNT_TOSHKENT_BROILER_ID, uid)
+
     print("  ✓ identity-service seeded")
 
 

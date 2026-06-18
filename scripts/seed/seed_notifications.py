@@ -3,20 +3,21 @@ Notification Service Seed
 ==========================
 Creates realistic notifications tied to batch lifecycle events.
 
+EX-04 (execution-v2): the quarantine-ending-reminder and batch-activated
+notifications were removed — those events no longer exist under the
+2-state ACTIVE/COMPLETED lifecycle (decision_log.md BMD-002/BMD-003).
+
 Notifications:
   1. [INFO]     Batch B-2026-001 joylashtirildi (farm_owner, manager)
-  2. [WARNING]  Karantin davri tugaydi — ertaga faollashtirish (manager)
-  3. [INFO]     Batch B-2026-001 faollashtirildi (farm_owner, manager)
-  4. [WARNING]  IBD vaksinatsiyasi vaqti keldi — 14-kun (manager, vet)
-  5. [INFO]     IBD vaksinatsiyasi bajarildi (farm_owner)
-  6. [CRITICAL] O'lim ko'rsatkichi — 15 bosh yo'qotildi (manager, farm_owner)
-  7. [WARNING]  Grower yemi kamaymoqda — minimum miqdorga yaqin (manager)
-  8. [WARNING]  Newcastle vaksinatsiyasi vaqti keldi — 21-kun (manager, vet)
-  9. [INFO]     Newcastle vaksinatsiyasi bajarildi (farm_owner)
- 10. [INFO]     Og'irlik namunasi: o'rtacha 1.428 kg (manager)
- 11. [WARNING]  Finisher yemiga o'tish vaqti — 35-kun (manager)
- 12. [INFO]     Batch B-2026-001 yopildi — sotish bajarildi (farm_owner, accountant)
- 13. [INFO]     Sotish tasdiqlandi: 329,280,000 UZS (accountant)
+  2. [WARNING]  IBD vaksinatsiyasi vaqti keldi — 14-kun (manager, vet)
+  3. [INFO]     IBD vaksinatsiyasi bajarildi (farm_owner)
+  4. [CRITICAL] O'lim ko'rsatkichi — 15 bosh yo'qotildi (manager, farm_owner)
+  5. [WARNING]  Grower yemi kamaymoqda — minimum miqdorga yaqin (manager)
+  6. [WARNING]  Newcastle vaksinatsiyasi vaqti keldi — 21-kun (manager, vet)
+  7. [INFO]     Newcastle vaksinatsiyasi bajarildi (farm_owner)
+  8. [INFO]     Og'irlik namunasi: o'rtacha 1.428 kg (manager)
+  9. [INFO]     Batch B-2026-001 yopildi — sotish bajarildi (farm_owner, accountant)
+ 10. [INFO]     Sotish tasdiqlandi: 329,280,000 UZS (accountant)
 """
 import asyncio
 import asyncpg
@@ -32,29 +33,14 @@ async def run(conn: asyncpg.Connection) -> None:
         # Batch placement
         (USER_FARM_OWNER_ID, "in_app", "info", "batch.placed",
          "Partiya B-2026-001 joylashtirildi",
-         "5000 bosh broiler jo'jasi karantinga joylashtirildi. Sana: 6-aprel 2026. "
-         "Yetkazib beruvchi: Samarqand Inkubator MChJ.",
+         "5000 bosh broiler jo'jasi joylashtirildi va faol holatga o'tkazildi. "
+         "Sana: 6-aprel 2026. Yetkazib beruvchi: Samarqand Inkubator MChJ.",
          BATCH_A_ID, BATCH_ARRIVAL, True, True),
 
         (USER_MANAGER_ID, "in_app", "info", "batch.placed",
          "Yangi partiya B-2026-001 joylashtirildi",
-         "5000 bosh broiler jo'jasi A-sektorda karantinga qo'yildi. "
-         "Karantin muddati: 6-aprel dan 13-aprelgacha.",
+         "5000 bosh broiler jo'jasi A-sektorda faol holatda joylashtirildi.",
          BATCH_A_ID, BATCH_ARRIVAL, True, True),
-
-        # Quarantine ending reminder (day 6)
-        (USER_MANAGER_ID, "in_app", "warning", "batch.quarantine_ending",
-         "Karantin ertaga tugaydi — B-2026-001",
-         "B-2026-001 partiyasining karantin davri ertaga (13-aprel) tugaydi. "
-         "Faollashtirish uchun tayyor bo'ling. O'sish ko'rsatkichlari normal.",
-         BATCH_A_ID, d(6), True, True),
-
-        # Batch activated
-        (USER_FARM_OWNER_ID, "in_app", "info", "batch.activated",
-         "Partiya B-2026-001 faollashtirildi",
-         "Karantin muvaffaqiyatli yakunlandi. B-2026-001 partiyasi ishlab chiqarish "
-         "holatiga o'tkazildi. Joriy soni: 4977 bosh.",
-         BATCH_A_ID, BATCH_ACTIVATED, True, True),
 
         # High mortality alert — Day 3 (15 dead)
         (USER_FARM_OWNER_ID, "in_app", "critical", "batch.mortality_spike",
