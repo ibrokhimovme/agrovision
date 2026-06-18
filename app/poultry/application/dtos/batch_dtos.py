@@ -16,19 +16,15 @@ class CreateBatchRequest(BaseModel):
     species: PoultrySpecies
     initial_count: int = Field(gt=0)
     placement_date: datetime
-    batch_code: Optional[str] = None
     supplier_name: Optional[str] = None
     chick_price_per_head: Optional[Decimal] = None
     notes: Optional[str] = None
-    quarantine_end_date: Optional[datetime] = None
 
 
 class UpdateBatchRequest(BaseModel):
-    batch_code: Optional[str] = None
     supplier_name: Optional[str] = None
     chick_price_per_head: Optional[Decimal] = None
     notes: Optional[str] = None
-    quarantine_end_date: Optional[datetime] = None
 
 
 class CloseBatchRequest(BaseModel):
@@ -44,11 +40,10 @@ class BatchResponse(BaseModel):
     section_id: UUID
     species: PoultrySpecies
     status: BatchStatus
-    batch_code: Optional[str]
+    batch_code: str
     initial_count: int
     current_count: int
     placement_date: datetime
-    quarantine_end_date: Optional[datetime]
     closed_at: Optional[datetime]
     close_reason: Optional[BatchCloseReason]
     supplier_name: Optional[str]
@@ -56,5 +51,9 @@ class BatchResponse(BaseModel):
     notes: Optional[str]
     total_mortality: int
     survival_rate: Decimal
+    # EX-16 (execution-v2): archive system, decision_log.md BMD-018.
+    is_archived: bool
+    archived_at: Optional[datetime]
+    archived_by: Optional[UUID]
     created_at: datetime
     updated_at: datetime

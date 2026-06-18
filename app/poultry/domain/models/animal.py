@@ -1,92 +1,71 @@
 """
-Poultry Batch Domain Models — MVP
-===================================
-ADR-003: This service is focused on poultry batch management for MVP.
+Poultry Batch Domain Models
+=============================
+ADR-003: This service is focused on poultry batch management.
 Species in scope: broiler, layer.
 
-MVP models (active):
+Models:
   Batch          — poultry flock group (partiya), managed through full lifecycle
   WeightSampling — periodic sample weight record for FCR/ADG calculation
   MortalityRecord — daily mortality count per batch
 
-FUTURE RELEASE models (schema preserved, not activated):
-  Animal         — individual bird/animal tracking (RFID, ear tags, genealogy)
-                   Activated when individual traceability is required (Phase 3+)
-  AnimalStatus   — individual status state machine (Phase 3+)
-
-Domain rules (MVP):
+Domain rules:
   - All poultry is managed as batches (partiya). No per-bird tracking.
-  - Batch status transitions: quarantine → active → closed. No skip.
-  - Quarantine minimum: 7–14 days for poultry (BP-03).
+  - Batch status: active → completed. No skip, no reopening.
   - Mortality is always recorded at batch level with a daily count.
   - Weight is sampled (subset of flock), not per-bird measurement.
+
+EX-04 (Batch Lifecycle Simplification, execution-v2): quarantine, slaughter,
+RFID, and individual-bird tracking were removed entirely — not deferred to
+a future release — per decision_log.md BMD-002/BMD-003/BMD-004. The
+previously-preserved FUTURE RELEASE `_Animal_FutureRelease`/`AnimalStatus`/
+`Species` (multi-species) skeletons were deleted along with them: ADR-003's
+original assumption that individual-animal tracking might be activated in a
+later phase is explicitly overridden by BMD-004, not merely left dormant.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Numeric, String, Integer, DateTime, Text
+from sqlalchemy import Boolean, ForeignKey, Numeric, String, Integer, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.models.base import Base, UUIDPrimaryKeyMixin, AuditMixin
 
 
-# ── MVP Enums ─────────────────────────────────────────────────────────────────
+# ── Enums ─────────────────────────────────────────────────────────────────────
 
 class PoultrySpecies(str, Enum):
-    """MVP poultry species. Cattle/sheep/goat → FUTURE RELEASE (ADR-003)."""
+    """Poultry species. Cattle/sheep/goat permanently out of scope (BMD-004)."""
     BROILER = "broiler"
     LAYER = "layer"
 
 
 class BatchStatus(str, Enum):
-    QUARANTINE = "quarantine"
     ACTIVE = "active"
-    CLOSED = "closed"
+    COMPLETED = "completed"
 
 
 class BatchCloseReason(str, Enum):
     SALE = "sale"
-    SLAUGHTER = "slaughter"
     TRANSFER = "transfer"
     DISEASE = "disease"
     OTHER = "other"
 
 
-# ── FUTURE RELEASE Enums (preserved, not used in MVP) ─────────────────────────
-
-class Species(str, Enum):
-    """Full species enum. CATTLE/SHEEP/GOAT deferred to Phase 3 (ADR-003)."""
-    BROILER = "broiler"
-    LAYER = "layer"
-    CATTLE = "cattle"   # FUTURE RELEASE — ADR-003
-    SHEEP = "sheep"     # FUTURE RELEASE — ADR-003
-    GOAT = "goat"       # FUTURE RELEASE — ADR-003
-
-
-class AnimalStatus(str, Enum):
-    """Individual animal status. Not used in MVP — Animal model is Phase 3."""
-    QUARANTINE = "quarantine"
-    ACTIVE = "active"
-    ISOLATED = "isolated"
-    DECEASED = "deceased"
-    SOLD = "sold"
-    SLAUGHTERED = "slaughtered"
-
-
-# ── MVP Domain Models ─────────────────────────────────────────────────────────
+# ── Domain Models ───────────────────────────────────────────────────────────
 
 class Batch(Base, UUIDPrimaryKeyMixin, AuditMixin):
     """
-    Poultry batch (partiya). Core MVP model.
+    Poultry batch (partiya).
     Manages a group of birds through their full production lifecycle.
-    SRS §5.3 (SF-03), BRD §6.1 item 2. BP-01 through BP-15.
+    SRS §5.3 (SF-03), BRD §6.1 item 2.
 
-    Primary workflow: placement → [feed/water/vaccination/mortality daily] → close
+    Primary workflow: placement (ACTIVE) → [feed/mortality/weight daily] → close (COMPLETED)
     """
     __tablename__ = "batches"
 
@@ -95,17 +74,26 @@ class Batch(Base, UUIDPrimaryKeyMixin, AuditMixin):
     farm_id: Mapped[UUID] = mapped_column(ForeignKey("farm.farms.id"), nullable=False, index=True)
     section_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
     species: Mapped[PoultrySpecies] = mapped_column(String(20), nullable=False)
-    status: Mapped[BatchStatus] = mapped_column(String(20), nullable=False, default=BatchStatus.QUARANTINE)
-    batch_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    status: Mapped[BatchStatus] = mapped_column(String(20), nullable=False, default=BatchStatus.ACTIVE)
+    # EX-05 (Batch Auto Naming, execution-v2): batch_code is mandatory and
+    # always server-generated (farm-prefixed sequential convention, decided
+    # with the business owner — see decision_log.md BMD-012). Uniqueness is
+    # enforced per-farm at the database level (migration 004), not just here.
+    batch_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     initial_count: Mapped[int] = mapped_column(Integer, nullable=False)
     current_count: Mapped[int] = mapped_column(Integer, nullable=False)
     placement_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    quarantine_end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     close_reason: Mapped[Optional[BatchCloseReason]] = mapped_column(String(20), nullable=True)
     supplier_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     chick_price_per_head: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # EX-16 (Archive System, execution-v2): additive-only, never a deletion
+    # path (decision_log.md BMD-007/BMD-018). status stays COMPLETED when
+    # archived — this is an orthogonal visibility flag, not a new status.
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    archived_by: Mapped[Optional[UUID]] = mapped_column(nullable=True)
 
     mortality_records: Mapped[list["MortalityRecord"]] = relationship(
         "MortalityRecord", back_populates="batch", cascade="all, delete-orphan"
@@ -115,11 +103,10 @@ class Batch(Base, UUIDPrimaryKeyMixin, AuditMixin):
     )
 
     def transition_to(self, new_status: BatchStatus) -> None:
-        """Enforces valid batch state transitions. BP-03 quarantine rule."""
+        """Enforces valid batch state transitions (EX-04: ACTIVE -> COMPLETED only)."""
         VALID_TRANSITIONS = {
-            BatchStatus.QUARANTINE: {BatchStatus.ACTIVE},
-            BatchStatus.ACTIVE: {BatchStatus.CLOSED},
-            BatchStatus.CLOSED: set(),
+            BatchStatus.ACTIVE: {BatchStatus.COMPLETED},
+            BatchStatus.COMPLETED: set(),
         }
         if new_status not in VALID_TRANSITIONS.get(self.status, set()):
             from shared.exceptions import InvalidStateTransitionError
@@ -135,6 +122,35 @@ class Batch(Base, UUIDPrimaryKeyMixin, AuditMixin):
         if self.initial_count == 0:
             return Decimal("0")
         return Decimal(str(round(self.current_count / self.initial_count * 100, 2)))
+
+    def archive(self, archived_by: UUID) -> None:
+        """EX-16 (execution-v2): manual-only archiving, restricted to COMPLETED
+        batches per the archive policy (decision_log.md BMD-018)."""
+        from shared.exceptions import BusinessRuleViolationError
+        if self.status != BatchStatus.COMPLETED:
+            raise BusinessRuleViolationError(
+                "BATCH_ARCHIVE_REQUIRES_COMPLETED",
+                "Only a COMPLETED batch can be archived.",
+            )
+        if self.is_archived:
+            raise BusinessRuleViolationError(
+                "BATCH_ALREADY_ARCHIVED",
+                "This batch is already archived.",
+            )
+        self.is_archived = True
+        self.archived_at = datetime.now(timezone.utc)
+        self.archived_by = archived_by
+
+    def unarchive(self) -> None:
+        from shared.exceptions import BusinessRuleViolationError
+        if not self.is_archived:
+            raise BusinessRuleViolationError(
+                "BATCH_NOT_ARCHIVED",
+                "This batch is not archived.",
+            )
+        self.is_archived = False
+        self.archived_at = None
+        self.archived_by = None
 
 
 class WeightSampling(Base, UUIDPrimaryKeyMixin, AuditMixin):
@@ -178,43 +194,9 @@ class MortalityRecord(Base, UUIDPrimaryKeyMixin, AuditMixin):
 
     batch: Mapped["Batch"] = relationship("Batch", back_populates="mortality_records")
 
-
-# ── FUTURE RELEASE — Individual Animal Tracking (Phase 3, ADR-003) ────────────
-#
-# The Animal model below is preserved as a future-release skeleton.
-# It is NOT registered with Alembic and NOT used in MVP endpoints.
-# Activate when individual bird/livestock traceability is required.
-#
-# Deferred features:
-#   - Per-animal health history
-#   - RFID tag scanning
-#   - Ear tag / physical tag number
-#   - Genealogy and breeding records
-#   - Individual weight tracking
-#   - Cattle, sheep, goat management (SF-04, SF-05)
-#   - Animal transfer workflows (BP-02 individual level)
-#
-# See ADR-003 for rationale.
-
-class _Animal_FutureRelease(Base, UUIDPrimaryKeyMixin, AuditMixin):
-    """
-    FUTURE RELEASE — Individual livestock animal.
-    SF-04 (livestock management), SF-05 (animal registration).
-    Not active in MVP. See ADR-003.
-    """
-    __tablename__ = "animals_future"  # separate table name avoids accidental activation
-
-    farm_id: Mapped[UUID] = mapped_column(ForeignKey("farms_ref.id"), nullable=False, index=True)
-    section_id: Mapped[UUID] = mapped_column(nullable=False)
-    species: Mapped[Species] = mapped_column(String(20), nullable=False)
-    status: Mapped[AnimalStatus] = mapped_column(String(20), nullable=False, default=AnimalStatus.QUARANTINE)
-    tag_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, unique=True)
-    rfid_tag: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    breed: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    birth_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    arrival_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    supplier_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    purchase_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 2), nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    __abstract__ = False  # set to True if you want Alembic to ignore this table
+# EX-04 (execution-v2): the former "FUTURE RELEASE — Individual Animal
+# Tracking" skeleton (_Animal_FutureRelease, AnimalStatus, Species,
+# RFID/tag-number fields) was removed entirely per decision_log.md BMD-004
+# — permanently out of scope, not deferred. It was never Alembic-registered
+# or used by any live endpoint (table "animals_future" was never created in
+# any database), so removing it has no data-migration implication.

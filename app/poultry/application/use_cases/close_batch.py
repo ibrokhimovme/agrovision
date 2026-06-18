@@ -19,7 +19,10 @@ class CloseBatchUseCase:
         if batch is None:
             raise EntityNotFoundError("Batch", batch_id)
 
-        batch.transition_to(BatchStatus.CLOSED)
+        # EX-04 (execution-v2): terminal status is COMPLETED, not CLOSED
+        # (decision_log.md BMD-003). This use case/endpoint keeps its
+        # "close" naming — only the status vocabulary changed.
+        batch.transition_to(BatchStatus.COMPLETED)
         batch.closed_at = datetime.now(timezone.utc)
         batch.close_reason = req.close_reason
 

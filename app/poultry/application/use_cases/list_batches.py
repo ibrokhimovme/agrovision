@@ -18,5 +18,6 @@ class ListBatchesUseCase:
         status: Optional[BatchStatus],
         page: int,
         page_size: int,
+        archived: Optional[bool] = False,
     ) -> tuple[list[Batch], int]:
-        return await self._repo.list_by_farm(farm_id, status, page, page_size)
+        return await self._repo.list_by_farm(farm_id, status, page, page_size, archived)

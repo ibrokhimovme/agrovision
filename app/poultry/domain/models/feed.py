@@ -36,6 +36,10 @@ class FeedConsumption(Base, UUIDPrimaryKeyMixin, AuditMixin):
     quantity_kg: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
     water_liters: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 3), nullable=True)
     age_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    # Optional link to inventory item — used by P-09 to auto-deduct stock
-    feed_inventory_item_id: Mapped[Optional[UUID]] = mapped_column(nullable=True)
+    # Optional link to inventory item — used by P-09 to auto-deduct stock.
+    # EX-10 (Inventory Linkage Hardening, execution-v2): was a bare UUID
+    # with no FK enforcement; hardened per decision_log.md BMD-014.
+    feed_inventory_item_id: Mapped[Optional[UUID]] = mapped_column(
+        ForeignKey("inventory.stock_items.id"), nullable=True
+    )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
