@@ -68,6 +68,7 @@ class GenerateBatchReportUseCase:
             status=batch.get("status", ""),
             placement_date=batch.get("placement_date", ""),
             age_days=_int(batch, "age_days"),
+            is_archived=bool(batch.get("is_archived", False)),
 
             fcr=_dec(weight_metrics, "fcr"),
             adg_grams=_dec(weight_metrics, "adg_grams"),
@@ -77,8 +78,13 @@ class GenerateBatchReportUseCase:
             total_water_liters=_dec(feed_summary, "total_water_liters"),
 
             total_deaths=_int(mortality_summary, "total_deaths"),
-            mortality_rate_pct=_dec(mortality_summary, "mortality_rate_pct"),
-            survival_rate_pct=_dec(mortality_summary, "survival_rate_pct"),
+            # EX-12 (execution-v2): fixed key mismatch — MortalitySummaryResponse
+            # field is "mortality_rate", not "mortality_rate_pct"; this was
+            # silently returning null in every report, breaking mortality
+            # trend reporting. survival_rate_pct has no equivalent in the
+            # mortality summary at all — it comes from the batch itself.
+            mortality_rate_pct=_dec(mortality_summary, "mortality_rate"),
+            survival_rate_pct=_dec(batch, "survival_rate"),
 
             total_cost_uzs=_dec(cost_summary, "total_uzs"),
             total_revenue_uzs=_dec(profit, "total_revenue_uzs"),

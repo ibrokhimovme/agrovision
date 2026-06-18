@@ -24,6 +24,7 @@ class BatchReportResponse(BaseModel):
     status: str
     placement_date: str
     age_days: Optional[int]
+    is_archived: bool = False  # EX-16 (execution-v2)
 
     # Growth performance
     fcr: Optional[Decimal]
@@ -46,3 +47,16 @@ class BatchReportResponse(BaseModel):
     profit_margin_pct: Optional[Decimal]
     sale_count: Optional[int]
     expense_count: Optional[int]
+
+
+class FarmComparisonRow(BaseModel):
+    """EX-12 (execution-v2): farm-to-farm comparison row — aggregated across all of a farm's batches."""
+    farm_id: UUID
+    batch_count: int
+    avg_fcr: Optional[Decimal]
+    avg_mortality_rate_pct: Optional[Decimal]
+    total_feed_kg: Optional[Decimal]
+    total_revenue_uzs: Optional[Decimal]
+    total_cost_uzs: Optional[Decimal]
+    total_profit_uzs: Optional[Decimal]
+    avg_profit_margin_pct: Optional[Decimal]

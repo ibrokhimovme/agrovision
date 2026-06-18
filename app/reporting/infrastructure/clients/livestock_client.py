@@ -64,3 +64,15 @@ class LivestockClient:
                 return None
             resp.raise_for_status()
             return resp.json().get("data")
+
+    async def list_batches(self, farm_id: UUID, archived: str = "false") -> list[dict[str, Any]]:
+        """EX-12 (execution-v2): all batches for a farm, for cross-batch trend/comparison reports.
+        EX-16 (execution-v2): archived passthrough — 'false' (default, matches
+        Dashboard's "active only" rule), 'true', or 'all' (Reports' requirement
+        to show both ACTIVE and ARCHIVED with filter support)."""
+        async with _client() as client:
+            resp = await client.get(
+                "/batches/", params={"farm_id": str(farm_id), "page_size": 100, "archived": archived}
+            )
+            resp.raise_for_status()
+            return resp.json().get("data") or []
