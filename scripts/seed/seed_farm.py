@@ -70,7 +70,7 @@ async def run(conn: asyncpg.Connection) -> None:
 
 async def main():
     print("\n[farm-service]")
-    conn = await asyncpg.connect(DATABASES["farm"])
+    conn = await connect("farm")
     try:
         await run(conn)
     finally:

@@ -7,12 +7,14 @@
 ## Backlog Statistics
 
 ```
-Total Tasks:        ~130
-COMPLETED:           0  (Phase 0 and 1 verified via CH-001–CH-005, pre-dates this backlog)
-IN_PROGRESS:         0
-NOT_STARTED:       ~130
-BLOCKED:             0
-DEFERRED:           17  (see FUTURE_RELEASE section)
+Total Tasks:        ~155
+COMPLETED:          ~130  (P-00 through P-14 all verified complete; P-15 E2E tests done)
+IN_PROGRESS:          0
+NOT_STARTED:         ~20  (P-15 remaining items, P-16 Farm CRUD, P-17 User Mgmt UI)
+BLOCKED:              0
+DEFERRED:            17  (see FUTURE_RELEASE section)
+
+Last audit: 2026-06-17
 ```
 
 ---
@@ -29,7 +31,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 2 — Identity Service `NOT_STARTED`
+## PHASE 2 — Identity Service `VERIFIED_COMPLETE`
 
 ### F-02-01: Database Schema and Migrations
 
@@ -98,7 +100,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 3 — Frontend Foundation `NOT_STARTED`
+## PHASE 3 — Frontend Foundation `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -120,7 +122,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 4 — Poultry Batch Management `NOT_STARTED`
+## PHASE 4 — Poultry Batch Management `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -160,7 +162,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 5 — Feed Consumption `NOT_STARTED`
+## PHASE 5 — Feed Consumption `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -180,7 +182,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 6 — Mortality Tracking `NOT_STARTED`
+## PHASE 6 — Mortality Tracking `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -197,7 +199,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 7 — Vaccination Management `NOT_STARTED`
+## PHASE 7 — Vaccination Management `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -215,7 +217,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 8 — Weight Sampling `NOT_STARTED`
+## PHASE 8 — Weight Sampling `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -231,7 +233,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 9 — Inventory Integration `NOT_STARTED`
+## PHASE 9 — Inventory Integration `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -254,7 +256,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 10 — Cost Tracking `NOT_STARTED`
+## PHASE 10 — Cost Tracking `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -273,7 +275,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 11 — Sales Management `NOT_STARTED`
+## PHASE 11 — Sales Management `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -289,7 +291,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 12 — Profit Analysis `NOT_STARTED`
+## PHASE 12 — Profit Analysis `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -302,7 +304,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 13 — Notifications `NOT_STARTED`
+## PHASE 13 — Notifications `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -319,7 +321,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 14 — Reporting `NOT_STARTED`
+## PHASE 14 — Reporting `VERIFIED_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -335,7 +337,7 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 
 ---
 
-## PHASE 15 — MVP Stabilization `NOT_STARTED`
+## PHASE 15 — MVP Stabilization `PARTIALLY_COMPLETE`
 
 | Task ID | Task | Status | Completed |
 |---------|------|--------|-----------|
@@ -349,6 +351,60 @@ All deliverables completed via CH-005 (pre-backlog). Evidence in project_memory.
 | T-15-08 | User guide (Uzbek) | NOT_STARTED | — |
 | T-15-09 | Deployment guide | NOT_STARTED | — |
 | T-15-10 | UAT test script | NOT_STARTED | — |
+
+---
+
+---
+
+## PHASE 16 — Farm Management CRUD `NOT_STARTED`
+
+**Priority:** HIGH — Required by new business requirement (2026-06-17)  
+**Dependencies:** P-04 VERIFIED_COMPLETE
+
+### BN-FIX-01: Batch Creation Section Selector
+
+| Task ID | Task | Status | Completed |
+|---------|------|--------|-----------|
+| BN-FIX-01-01 | Backend: `GET /api/v1/farms/{id}/buildings` — list buildings for a farm | NOT_STARTED | — |
+| BN-FIX-01-02 | Backend: `GET /api/v1/buildings/{id}/sections` — list sections for a building | NOT_STARTED | — |
+| BN-FIX-01-03 | Frontend: Replace `section_id` UUID text field in NewBatchPage with cascade farm → building → section dropdown | NOT_STARTED | — |
+
+### F-16-01: Farm Backend Endpoints (Missing)
+
+| Task ID | Task | Status | Completed |
+|---------|------|--------|-----------|
+| T-16-01-01 | Backend: `PATCH /api/v1/farms/{id}` — edit farm (name, region, farm_type) | NOT_STARTED | — |
+| T-16-01-02 | Backend: `DELETE /api/v1/farms/{id}` — soft delete farm (blocked if active batches) | NOT_STARTED | — |
+| T-16-01-03 | Backend: `POST /api/v1/farms/{id}/buildings` — create building | NOT_STARTED | — |
+| T-16-01-04 | Backend: `POST /api/v1/buildings/{id}/sections` — create section | NOT_STARTED | — |
+
+### F-16-02: Farm Frontend Pages (Missing)
+
+| Task ID | Task | Status | Completed |
+|---------|------|--------|-----------|
+| T-16-02-01 | Frontend: "Yangi ferma qo'shish" form on FarmListPage (Uzbek) | NOT_STARTED | — |
+| T-16-02-02 | Frontend: Farm detail page — lists buildings and their sections | NOT_STARTED | — |
+| T-16-02-03 | Frontend: Edit farm inline or modal | NOT_STARTED | — |
+| T-16-02-04 | Frontend: Delete farm with confirmation dialog | NOT_STARTED | — |
+
+---
+
+## PHASE 17 — User Management UI `NOT_STARTED`
+
+**Priority:** HIGH — Required by new business requirement (2026-06-17)  
+**Note:** Backend is ALREADY COMPLETE. Only frontend work needed.
+
+### F-17-01: User Management Frontend
+
+| Task ID | Task | Status | Completed |
+|---------|------|--------|-----------|
+| T-17-01-01 | Add "Foydalanuvchilar" nav item to Sidebar (visible to farm_owner, farm_director roles only) | NOT_STARTED | — |
+| T-17-01-02 | Create `/users` route in App.tsx | NOT_STARTED | — |
+| T-17-01-03 | Frontend: UsersPage — user list table (name, email, role badge, active status) | NOT_STARTED | — |
+| T-17-01-04 | Frontend: "Yangi foydalanuvchi" create user form (Uzbek labels) — full_name, email, password, role | NOT_STARTED | — |
+| T-17-01-05 | Frontend: Edit user / role assignment modal | NOT_STARTED | — |
+| T-17-01-06 | Frontend: Enable/disable user toggle on user list | NOT_STARTED | — |
+| T-17-01-07 | Frontend: userService.ts — API client for users/roles endpoints | NOT_STARTED | — |
 
 ---
 
@@ -386,6 +442,22 @@ The following will not be implemented in MVP. Require explicit approval to activ
 |------|---------|-------------|-------|---------------|
 | 2026-06-16 | PRE-BACKLOG | Repository validation, governance, ADR records (CH-001–CH-004) | P-00 | See project_memory.md CH-001–CH-004 |
 | 2026-06-16 | PRE-BACKLOG | Runtime readiness, docker infrastructure (CH-005) | P-01 | See project_memory.md CH-005 |
+| 2026-06-17 | CL-002 | Identity service complete (auth, users, roles, JWT, Redis blacklist) | P-02 | 21 files |
+| 2026-06-17 | CL-003 | Frontend foundation (Login, Layout, Sidebar, Header, Toast, Spinner, API client) | P-03 | 9 files |
+| 2026-06-17 | CL-004 | Batch management, farm service, quarantine enforcement, state machine | P-04 | 30+ files |
+| 2026-06-17 | CL-005 | Feed consumption recording (feed_consumptions, FCR, frontend form) | P-05 | 13 files |
+| 2026-06-17 | CL-006 | Mortality tracking (mortality_records, current_count decrement, frontend) | P-06 | 12 files |
+| 2026-06-17 | CL-007 | Vaccination management (schedules, plan generation, execution, frontend) | P-07 | 14 files |
+| 2026-06-17 | CL-008 | Weight sampling (ADG/FCR metrics, history, frontend form + cards) | P-08 | 11 files |
+| 2026-06-17 | CL-009 | Inventory integration (warehouse + stock CRUD, FIFO/FEFO, frontend InventoryPage) | P-09 | commit c9949ba |
+| 2026-06-17 | CL-010 | Cost tracking (expense model, manual expense, cost summary, FinancePage) | P-10 | commit 49ef5fd |
+| 2026-06-17 | CL-011 | Sales management (SaleRecord, sales CRUD, sale form on FinancePage) | P-11 | commit 027c563 |
+| 2026-06-17 | CL-012 | Profit analysis (CalculateBatchProfitUseCase, profit endpoint, profit card UI) | P-12 | commit e575be5 |
+| 2026-06-17 | CL-013 | Notifications (WebSocket, notification DB, bell in header, drawer) | P-13 | commit 08d24ca |
+| 2026-06-17 | CL-014 | Reporting (batch report JSON + PDF, livestock/finance clients, ReportsPage, BatchReportPage) | P-14 | commit 7adbad5 |
+| 2026-06-17 | CL-015 | E2E tests: livestock, finance, reporting workflows | P-15 | commit 448289a |
+| 2026-06-17 | CL-016 | Dashboard, FinancePage, ReportsPage replaced with real API-connected pages | P-03/P-14 | commit 95e66fa |
+| 2026-06-17 | AUDIT | Governance sync: updated phase_status.md + backlog to reflect reality; added P-16, P-17 | ALL | governance files |
 
 ---
 

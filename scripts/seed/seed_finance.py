@@ -202,7 +202,7 @@ async def run(conn: asyncpg.Connection) -> None:
 
 async def main():
     print("\n[finance-service]")
-    conn = await asyncpg.connect(DATABASES["finance"])
+    conn = await connect("finance")
     try:
         await run(conn)
     finally:

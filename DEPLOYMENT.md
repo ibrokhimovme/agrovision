@@ -1,5 +1,6 @@
 # AgroVision — Deployment Guide
-**Version:** 1.0 | **Date:** 2026-06-17
+**Version:** 2.0 | **Date:** 2026-06-18
+**Architecture:** Modular monolith (migrated from 8 microservices — see `.project-governance/monolith-migration/` for the full migration record)
 
 ---
 
@@ -7,8 +8,8 @@
 
 - Docker ≥ 24 and Docker Compose v2
 - Git
-- 4 GB RAM minimum (8 GB recommended)
-- Ports 3000 and 8000 free on the host
+- 2 GB RAM minimum (one application container instead of eight)
+- Ports 80 and 8100 free on the host
 
 ---
 
@@ -26,16 +27,13 @@ cp .env.example .env
 # Must be changed from "changeme" for staging/production
 JWT_SECRET_KEY=<generate: openssl rand -hex 32>
 
-# Database passwords
+# Database password
 POSTGRES_PASSWORD=<strong-password>
-
-# RabbitMQ
-RABBITMQ_DEFAULT_PASS=<strong-password>
 
 # Redis
 REDIS_PASSWORD=<strong-password>
 
-# Environment label — services validate JWT_SECRET_KEY in non-development
+# Environment label — the app validates JWT_SECRET_KEY in non-development
 ENVIRONMENT=production
 ```
 
@@ -44,27 +42,26 @@ Generate a secure JWT secret:
 openssl rand -hex 32
 ```
 
+**Note:** RabbitMQ variables are no longer used — RabbitMQ was removed in the M7 cleanup phase (it was confirmed unused by any service throughout the project's history; see `migration_decisions.md` MD-002).
+
 ---
 
 ## Development (local)
 
 ```bash
-# Start all services + databases
-docker compose -f docker-compose.dev.yml up --build
+# Start the stack (postgres, redis, the monolith, frontend, nginx)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
-# In a second terminal — seed roles and admin user
-docker compose -f docker-compose.dev.yml exec identity-service python seeds/seed_roles.py
-
-# Frontend (hot reload)
+# Frontend (hot reload, separate from the container)
 cd frontend && npm install && npm run dev
 ```
 
-Services available at:
-- Frontend: http://localhost:3000
-- API Gateway: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+Available at:
+- Frontend: http://localhost
+- API (via Nginx): http://localhost/api/v1/...
+- Monolith direct + API docs: http://localhost:8100/docs
 
-Default admin: `admin@agrovision.uz` / `Admin@123`
+Default admin: `admin@agrovision.uz` / `Admin123!`
 
 ---
 
@@ -75,40 +72,26 @@ Default admin: `admin@agrovision.uz` / `Admin@123`
 # 2. Start stack
 docker compose up -d --build
 
-# 3. Run database migrations (first deploy only)
-for svc in farm-service identity-service livestock-service inventory-service finance-service notification-service reporting-service; do
-  docker compose exec $svc alembic upgrade head
-done
-
-# 4. Seed initial data
-docker compose exec identity-service python seeds/seed_roles.py
-
-# 5. Verify all containers healthy
+# 3. Verify all containers healthy
 docker compose ps
 ```
+
+**Database migrations:** not currently automated for the monolith (see "Database Migrations" below) — the consolidated database was brought to its current schema state via a one-time manual migration during the architecture migration's M4 phase. There is no seed-data step needed for a fresh production deploy; seeding (`scripts/seed/`) is a dev/demo-only convenience and currently targets the old per-service database names (needs updating — tracked as `repository_cleanup_backlog.md` CLEAN-07).
 
 ---
 
 ## Database Migrations
 
-Each service manages its own schema via Alembic.
+**Not currently wired up.** The monolith does not run Alembic on startup (deferred — see `migration_decisions.md` MD-008). The single `agrovision` database has 6 schemas (`identity`, `farm`, `poultry`, `inventory`, `finance`, `notifications`), each still tracking its own `alembic_version` (carried over from the original per-service databases during the M4 consolidation). If you need to make a schema change:
 
-```bash
-# Apply pending migrations for one service
-docker compose exec <service-name> alembic upgrade head
-
-# Rollback last migration
-docker compose exec <service-name> alembic downgrade -1
-
-# View migration history
-docker compose exec <service-name> alembic history
-```
+1. Write a new Alembic revision under the relevant module (a proper per-module migration directory structure for `app/<module>` is not yet built — this is real follow-up work).
+2. Until that exists, apply schema changes manually against `agrovision`, target schema via `SET search_path` or schema-qualified DDL, and update that schema's `alembic_version` table to match.
 
 ---
 
 ## Backup and Restore
 
-**Backup all PostgreSQL databases:**
+**Backup the database:**
 
 ```bash
 #!/bin/bash
@@ -116,32 +99,29 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="./backups/$TIMESTAMP"
 mkdir -p "$BACKUP_DIR"
 
-for db in farm_db identity_db livestock_db inventory_db finance_db notification_db reporting_db; do
-  docker compose exec -T postgres pg_dump -U agrovision "$db" \
-    | gzip > "$BACKUP_DIR/${db}.sql.gz"
-  echo "Backed up $db"
-done
-echo "Backup complete: $BACKUP_DIR"
+docker compose exec -T postgres pg_dump -U agrovision -Fc agrovision > "$BACKUP_DIR/agrovision.dump"
+echo "Backup complete: $BACKUP_DIR/agrovision.dump"
 ```
 
-**Restore a database:**
+**Restore:**
 
 ```bash
-gunzip -c backups/20260617_120000/farm_db.sql.gz \
-  | docker compose exec -T postgres psql -U agrovision farm_db
+cat backups/20260618_120000/agrovision.dump \
+  | docker compose exec -T postgres pg_restore -U agrovision -d agrovision --clean --if-exists
 ```
+
+(A historical pre-cutover backup of the original 7 per-service databases, taken immediately before they were dropped in M7, is kept at `.project-governance/monolith-migration/db_backups_2026-06-18/` for reference/rollback purposes only — not part of routine backup procedure.)
 
 ---
 
 ## Health Checks
 
 ```bash
-# API Gateway
-curl http://localhost:8000/health
+# Via Nginx (public entry point)
+curl http://localhost/health
 
-# Individual services (internal ports)
-curl http://localhost:8002/health   # farm-service
-curl http://localhost:8003/health   # livestock-service
+# Monolith directly
+curl http://localhost:8100/health
 ```
 
 ---
@@ -149,14 +129,14 @@ curl http://localhost:8003/health   # livestock-service
 ## Logs
 
 ```bash
-# All services
+# Everything
 docker compose logs -f
 
-# Single service
-docker compose logs -f api-gateway
+# The monolith only
+docker compose logs -f monolith
 
 # Last 100 lines
-docker compose logs --tail=100 livestock-service
+docker compose logs --tail=100 monolith
 ```
 
 ---
@@ -165,7 +145,7 @@ docker compose logs --tail=100 livestock-service
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| `JWT_SECRET_KEY must be set` on startup | ENVIRONMENT=production with default secret | Set `JWT_SECRET_KEY` in `.env` |
-| `Connection refused` to downstream service | Service not yet healthy | Wait 10–20s after `docker compose up`; check `docker compose ps` |
-| `alembic: command not found` | Running outside container | Use `docker compose exec <svc> alembic ...` |
-| Frontend shows "Fermalar yuklanmadi" | API Gateway not reachable | Verify `VITE_API_BASE_URL` points to gateway |
+| `JWT_SECRET_KEY must be set` on startup | `ENVIRONMENT=production` with default secret | Set `JWT_SECRET_KEY` in `.env` |
+| `Connection refused` from Nginx | Monolith not yet healthy | Wait 10–20s after `docker compose up`; check `docker compose ps` |
+| Frontend shows a loading/error state for data | Monolith not reachable | Verify `docker compose logs monolith`; confirm Nginx's `conf.d/agrovision.conf` upstream points at `monolith:8100` |
+| `relation "X" does not exist` after a fresh `agrovision` database | Schemas not bootstrapped | Run `infrastructure/postgres/init_monolith.sql` against the `agrovision` database, then restore/apply data as needed |

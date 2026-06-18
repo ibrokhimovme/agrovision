@@ -243,7 +243,7 @@ async def run(conn: asyncpg.Connection) -> None:
 
 async def main():
     print("\n[identity-service]")
-    conn = await asyncpg.connect(DATABASES["identity"])
+    conn = await connect("identity")
     try:
         await run(conn)
     finally:

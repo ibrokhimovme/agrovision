@@ -1,29 +1,31 @@
-.PHONY: help up down build restart logs ps clean migrate test lint format
+.PHONY: help up down build restart logs ps clean test lint format shell
 
 # Default target
 help:
-	@echo "AgroVision — Farm Management Platform"
+	@echo "AgroVision — Farm Management Platform (modular monolith)"
 	@echo ""
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Infrastructure:"
-	@echo "  up             Start all services (detached)"
-	@echo "  down           Stop all services"
-	@echo "  build          Build all Docker images"
-	@echo "  restart        Rebuild and restart all services"
-	@echo "  logs           Tail all service logs"
+	@echo "  up             Start the stack (detached)"
+	@echo "  down           Stop the stack"
+	@echo "  build          Build the Docker image"
+	@echo "  restart        Rebuild and restart the stack"
+	@echo "  logs           Tail logs"
 	@echo "  ps             Show running containers"
 	@echo "  clean          Remove containers, volumes, and orphans"
 	@echo ""
-	@echo "Database:"
-	@echo "  migrate        Run Alembic migrations for all services"
-	@echo "  migrate-<svc>  Run migrations for a specific service (e.g. make migrate-identity)"
-	@echo ""
 	@echo "Development:"
-	@echo "  test           Run all test suites"
-	@echo "  lint           Run ruff linter across all services"
-	@echo "  format         Run ruff formatter across all services"
-	@echo "  shell-<svc>    Open a shell inside a running service container"
+	@echo "  lint           Run ruff linter against app/"
+	@echo "  format         Run ruff formatter against app/"
+	@echo "  shell          Open a shell inside the running monolith container"
+	@echo ""
+	@echo "Note (M7, 2026-06-18): the 8 original microservices were migrated into"
+	@echo "the modular monolith (app/) and removed. Alembic-on-startup wiring for"
+	@echo "the monolith is deferred (see migration_decisions.md MD-008) — there is"
+	@echo "currently no 'make migrate' target. tests/e2e/* is not yet portable to"
+	@echo "app/<module> (see repository_cleanup_backlog.md CLEAN-05), so there is"
+	@echo "no 'make test' target here either; run pytest directly against tests/."
 
 # ── Infrastructure ──────────────────────────────────────────────────────────
 
@@ -50,38 +52,13 @@ ps:
 clean:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v --remove-orphans
 
-# ── Database Migrations ──────────────────────────────────────────────────────
-
-SERVICES := identity-service farm-service livestock-service inventory-service finance-service notification-service reporting-service
-
-migrate:
-	@for svc in $(SERVICES); do \
-		echo "--- Running migrations for $$svc ---"; \
-		docker compose exec $$svc alembic upgrade head; \
-	done
-
-migrate-%:
-	docker compose exec $* alembic upgrade head
-
 # ── Development ──────────────────────────────────────────────────────────────
 
-test:
-	@for svc in $(SERVICES); do \
-		echo "--- Testing $$svc ---"; \
-		docker compose exec $$svc pytest tests/ -v; \
-	done
-
 lint:
-	@for svc in $(SERVICES) api-gateway; do \
-		echo "--- Linting $$svc ---"; \
-		docker compose exec $$svc ruff check app/ tests/; \
-	done
+	docker compose exec monolith ruff check app/
 
 format:
-	@for svc in $(SERVICES) api-gateway; do \
-		echo "--- Formatting $$svc ---"; \
-		docker compose exec $$svc ruff format app/ tests/; \
-	done
+	docker compose exec monolith ruff format app/
 
-shell-%:
-	docker compose exec $* /bin/bash
+shell:
+	docker compose exec monolith /bin/bash

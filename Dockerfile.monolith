@@ -1,0 +1,33 @@
+# Build context: repository root (set in docker-compose.yml, same convention
+# as every services/<name>/Dockerfile).
+#
+# M6 — Runtime Simplification. This is a NEW, additive image: it does not
+# replace or modify any of the 8 existing services/<name>/Dockerfile files.
+# It builds the app/ package (M2-M5: modules copied from each service,
+# wired together into one FastAPI app) instead of a single services/<name>/.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY shared/requirements-base.txt ./requirements-base.txt
+RUN pip install --no-cache-dir -r requirements-base.txt
+
+# Only module-specific dependency across all 8 original services
+# (per current_state_architecture_report.md §2: reporting-service only).
+RUN pip install --no-cache-dir reportlab==4.2.5
+
+COPY shared/ ./shared/
+COPY app/ ./app/
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8100
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:8100/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]

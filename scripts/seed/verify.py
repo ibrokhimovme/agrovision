@@ -286,7 +286,7 @@ async def main():
 
     for svc, fn in service_checks:
         try:
-            conn = await asyncpg.connect(DATABASES[svc])
+            conn = await connect(svc)
             await fn(conn)
             await conn.close()
         except Exception as e:

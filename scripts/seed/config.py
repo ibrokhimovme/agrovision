@@ -15,20 +15,45 @@ from datetime import datetime, timezone, date, timedelta
 import os
 
 # ── Database connection ────────────────────────────────────────────────────────
+#
+# M7 (2026-06-18): the 7 per-service databases this module used to target were
+# dropped (migrated into the single `agrovision` database, one schema per
+# module — see .project-governance/monolith-migration/). DATABASES now holds
+# the same DSN for every key; SCHEMAS maps each key to its schema so callers
+# can open a connection with the right `search_path` via `connect()` below.
+
+import asyncpg
 
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 POSTGRES_USER = os.getenv("POSTGRES_USER", "agrovision")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "agrovision_dev")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "agrovision")
+
+_AGROVISION_DSN = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 DATABASES = {
-    "identity":     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/identity_db",
-    "farm":         f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/farm_db",
-    "livestock":    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/livestock_db",
-    "inventory":    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/inventory_db",
-    "finance":      f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/finance_db",
-    "notification": f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/notification_db",
+    "identity":     _AGROVISION_DSN,
+    "farm":         _AGROVISION_DSN,
+    "livestock":    _AGROVISION_DSN,
+    "inventory":    _AGROVISION_DSN,
+    "finance":      _AGROVISION_DSN,
+    "notification": _AGROVISION_DSN,
 }
+
+SCHEMAS = {
+    "identity":     "identity",
+    "farm":         "farm",
+    "livestock":    "poultry",
+    "inventory":    "inventory",
+    "finance":      "finance",
+    "notification": "notifications",
+}
+
+
+async def connect(key: str) -> asyncpg.Connection:
+    """Open a connection to the consolidated DB with search_path set to the module's schema."""
+    return await asyncpg.connect(DATABASES[key], server_settings={"search_path": SCHEMAS[key]})
 
 # ── Hardcoded UUIDs ────────────────────────────────────────────────────────────
 # Format: descriptive prefix + service-unique suffix

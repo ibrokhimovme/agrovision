@@ -153,7 +153,7 @@ async def run(conn: asyncpg.Connection) -> None:
 
 async def main():
     print("\n[notification-service]")
-    conn = await asyncpg.connect(DATABASES["notification"])
+    conn = await connect("notification")
     try:
         await run(conn)
     finally:

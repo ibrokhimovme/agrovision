@@ -737,6 +737,89 @@ P-00 Repository Validation ──► P-01 Runtime Readiness
 
 ---
 
+---
+
+## Phase 16 — Farm Management CRUD
+
+**Goal:** Allow users to fully manage farms: create, edit, delete, view buildings and sections. Fix batch creation section selector.  
+**Status:** NOT_STARTED  
+**Complexity:** Medium  
+**Dependencies:** P-04 VERIFIED_COMPLETE  
+**Services Impacted:** farm-service, frontend  
+**BRD:** §6.1 item 1, SF-02  
+**SRS:** §5.3
+
+### Epic: E-16 — Farm CRUD and Section Cascade
+
+#### Feature F-16-01: Farm Backend (Missing Endpoints)
+
+| Task ID | Description | BRD | SRS | Status |
+|---------|-------------|-----|-----|--------|
+| T-16-01-01 | `PATCH /api/v1/farms/{id}` — edit farm name, region, farm_type | §6.1 | §5.3 | NOT_STARTED |
+| T-16-01-02 | `DELETE /api/v1/farms/{id}` — soft delete (blocked if active batches exist) | §6.1 | §5.3 | NOT_STARTED |
+| T-16-01-03 | `GET /api/v1/farms/{id}/buildings` — list buildings for a farm | §6.1 | §5.3 | NOT_STARTED |
+| T-16-01-04 | `POST /api/v1/farms/{id}/buildings` — create building | §6.1 | §5.3 | NOT_STARTED |
+| T-16-01-05 | `GET /api/v1/buildings/{id}/sections` — list sections for a building | §6.1 | §5.3 | NOT_STARTED |
+| T-16-01-06 | `POST /api/v1/buildings/{id}/sections` — create section | §6.1 | §5.3 | NOT_STARTED |
+
+#### Feature F-16-02: Farm Frontend
+
+| Task ID | Description | BRD | SRS | Status |
+|---------|-------------|-----|-----|--------|
+| T-16-02-01 | "Yangi ferma qo'shish" modal/form on FarmListPage (Uzbek labels) | §8 | §5.3 | NOT_STARTED |
+| T-16-02-02 | Farm detail page — shows farm info + buildings list + sections per building | §8 | §5.3 | NOT_STARTED |
+| T-16-02-03 | Edit farm inline or modal (name, region, farm_type) | §8 | §5.3 | NOT_STARTED |
+| T-16-02-04 | Delete farm confirmation dialog (blocked if active batches exist) | §8 | §5.3 | NOT_STARTED |
+
+#### Feature F-16-03: Batch Creation Section Fix (BN-FIX-01)
+
+| Task ID | Description | BRD | SRS | Status |
+|---------|-------------|-----|-----|--------|
+| BN-FIX-01-01 | Backend: `GET /api/v1/farms/{id}/buildings` (may be covered by T-16-01-03) | BP-01 | §5.3 | NOT_STARTED |
+| BN-FIX-01-02 | Backend: `GET /api/v1/buildings/{id}/sections` (may be covered by T-16-01-05) | BP-01 | §5.3 | NOT_STARTED |
+| BN-FIX-01-03 | Frontend: Replace `section_id` UUID text field in NewBatchPage with cascade farm → building → section dropdown. User must never manually type a UUID. | BP-01 | UC-02 | NOT_STARTED |
+
+### Acceptance Criteria — Phase 16
+- Farm Owner can create a new farm via form (no UUID required)
+- Farm Owner can edit farm name, region, farm_type
+- Farm Owner can delete a farm (blocked with error message if active batches exist)
+- Farm detail page shows all buildings and sections under the farm
+- NewBatchPage shows farm → building → section dropdowns; no UUID field exposed to user
+
+---
+
+## Phase 17 — User Management UI
+
+**Goal:** Admin/Farm Owner can create, view, edit, and enable/disable users via the UI.  
+**Status:** NOT_STARTED  
+**Complexity:** Low (backend is complete)  
+**Dependencies:** P-02 VERIFIED_COMPLETE (backend already done)  
+**Services Impacted:** frontend only  
+**BRD:** §5 (Stakeholders), §6.1 item 19  
+**SRS:** §5.2, §5.26 (flexible permissions), SF-01
+
+### Epic: E-17 — User Management Frontend
+
+| Task ID | Description | BRD | SRS | Status |
+|---------|-------------|-----|-----|--------|
+| T-17-01-01 | Add "Foydalanuvchilar" nav item to Sidebar (visible to farm_owner, farm_director roles) | §5 | §5.2 | NOT_STARTED |
+| T-17-01-02 | Create `/users` route in App.tsx | §5 | §5.2 | NOT_STARTED |
+| T-17-01-03 | UsersPage — user list table (full_name, email, role badge, is_active status) | §5 | §5.2 | NOT_STARTED |
+| T-17-01-04 | "Yangi foydalanuvchi" form — full_name, email, password, role selector (Uzbek labels) | §5 | §5.2 | NOT_STARTED |
+| T-17-01-05 | Edit user modal — change full_name, phone, role assignment | §5 | §5.2 | NOT_STARTED |
+| T-17-01-06 | Enable/disable user toggle — calls `PATCH /users/{id}` with `is_active` field | §5 | §5.2 | NOT_STARTED |
+| T-17-01-07 | `frontend/src/services/userService.ts` — API client for users and roles endpoints | §5 | §5.2 | NOT_STARTED |
+
+### Acceptance Criteria — Phase 17
+- Farm Owner can see list of all users for their farm
+- Farm Owner can create a new user (Worker, Manager, etc.) without any UUID input
+- Farm Owner can assign/change a user's role
+- Farm Owner can disable a user (they can no longer log in)
+- Farm Owner can re-enable a disabled user
+- "Foydalanuvchilar" link visible in sidebar for owner/director roles
+
+---
+
 ## Deferred Features (FUTURE_RELEASE)
 
 The following features are explicitly out of MVP scope per ADR-003. Do not implement without explicit approval.

@@ -232,7 +232,7 @@ async def run(conn: asyncpg.Connection) -> None:
 
 async def main():
     print("\n[inventory-service]")
-    conn = await asyncpg.connect(DATABASES["inventory"])
+    conn = await connect("inventory")
     try:
         await run(conn)
     finally:

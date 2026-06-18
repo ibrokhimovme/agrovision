@@ -266,7 +266,7 @@ async def run(conn: asyncpg.Connection) -> None:
 
 async def main():
     print("\n[livestock-service]")
-    conn = await asyncpg.connect(DATABASES["livestock"])
+    conn = await connect("livestock")
     try:
         await run(conn)
     finally:
