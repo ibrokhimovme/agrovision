@@ -29,6 +29,14 @@ class AbstractUserRepository(ABC):
     async def list_by_farm(self, farm_id: UUID, offset: int, limit: int) -> tuple[list[User], int]: ...
 
     @abstractmethod
+    async def list_by_account(
+        self, account_id: Optional[UUID], offset: int, limit: int
+    ) -> tuple[list[User], int]:
+        """EX-15 (execution-v2): account-wide (multi-farm) user listing.
+        account_id=None means unrestricted — only valid for a superuser caller."""
+        ...
+
+    @abstractmethod
     async def increment_failed_attempts(self, user_id: UUID) -> None: ...
 
     @abstractmethod

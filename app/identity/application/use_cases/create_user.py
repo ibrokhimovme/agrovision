@@ -21,6 +21,10 @@ class CreateUserRequest:
     role_name: str
     farm_id: Optional[UUID] = None
     phone: Optional[str] = None
+    # EX-15 (execution-v2): the Account this new user belongs to, resolved
+    # by the endpoint (caller's own account, or the target farm's account
+    # for a superuser) before this use case runs.
+    account_id: Optional[UUID] = None
 
 
 class CreateUserUseCase:
@@ -47,6 +51,7 @@ class CreateUserUseCase:
             phone=req.phone,
             hashed_password=_bcrypt_mod.hashpw(req.password.encode(), _bcrypt_mod.gensalt()).decode(),
             farm_id=req.farm_id,
+            account_id=req.account_id,
         )
         user.roles.append(role)
         return await self._user_repo.create(user)

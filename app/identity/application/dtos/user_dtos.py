@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
     is_active: bool
     is_superuser: bool
     farm_id: Optional[UUID]
+    account_id: Optional[UUID]
     roles: list[RoleResponse]
 
     model_config = {"from_attributes": True}

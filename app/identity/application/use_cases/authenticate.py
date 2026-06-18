@@ -72,6 +72,10 @@ class AuthenticateUserUseCase:
             "email": user.email,
             "roles": roles,
             "farm_id": str(user.farm_id) if user.farm_id else None,
+            # EX-02 (Farm Management Revision, execution-v2): carries the
+            # user's Account so farm endpoints can scope by it, mirroring
+            # how farm_id is already carried for the same purpose.
+            "account_id": str(user.account_id) if user.account_id else None,
             "iat": now,
             "exp": now + timedelta(minutes=30),
             "type": "access",

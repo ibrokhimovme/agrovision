@@ -12,6 +12,12 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from shared.models.base import Base, UUIDPrimaryKeyMixin, AuditMixin
+# EX-01 (Account Foundation, execution-v2): imported (not otherwise used in
+# this file) purely so Account's Table registers in Base.metadata before
+# SQLAlchemy needs to resolve the "identity.accounts.id" FK strings below
+# and in app/farm/domain/models/farm.py — same registration requirement
+# that caused the cross-schema FK bug fixed in M8 (CL-030) for farm.farms.
+from app.identity.domain.models.account import Account  # noqa: F401
 
 
 # Association table: users ↔ roles (many-to-many)
@@ -46,6 +52,14 @@ class User(Base, UUIDPrimaryKeyMixin, AuditMixin):
     # dropped (see migration_decisions.md MD-003). The FarmRef model class
     # that used to live here was removed for the same reason.
     farm_id: Mapped[UUID | None] = mapped_column(ForeignKey("farm.farms.id"), nullable=True)
+    # EX-01 (Account Foundation, execution-v2): the Account a user belongs
+    # to. Nullable for now — a platform super-admin has none, and full
+    # enforcement (mandatory for non-superuser accounts) is EX-02/EX-15
+    # scope, not this phase's. "identity.accounts.id" is fully qualified
+    # because Account declares an explicit schema (see account.py).
+    account_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("identity.accounts.id"), nullable=True
+    )
 
     roles: Mapped[list["Role"]] = relationship(
         "Role", secondary=user_roles, back_populates="users", lazy="selectin"

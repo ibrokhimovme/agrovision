@@ -59,6 +59,27 @@ class SQLAlchemyUserRepository(AbstractUserRepository):
         )
         return result.scalars().all(), total
 
+    async def list_by_account(
+        self, account_id: Optional[UUID], offset: int, limit: int
+    ) -> tuple[list[User], int]:
+        base_query = select(User)
+        if account_id is not None:
+            base_query = base_query.where(User.account_id == account_id)
+
+        total_result = await self._session.execute(
+            select(func.count()).select_from(base_query.subquery())
+        )
+        total = total_result.scalar_one()
+
+        result = await self._session.execute(
+            base_query
+            .options(selectinload(User.roles))
+            .offset(offset)
+            .limit(limit)
+            .order_by(User.created_at.desc())
+        )
+        return result.scalars().all(), total
+
     async def increment_failed_attempts(self, user_id: UUID) -> None:
         await self._session.execute(
             update(User)

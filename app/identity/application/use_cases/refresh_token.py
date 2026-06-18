@@ -40,6 +40,9 @@ class RefreshTokenUseCase:
             "email": user.email,
             "roles": roles,
             "farm_id": str(user.farm_id) if user.farm_id else None,
+            # EX-02 (execution-v2): keep the Account claim alive across
+            # token refresh, same as farm_id.
+            "account_id": str(user.account_id) if user.account_id else None,
             "iat": now,
             "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
             "type": "access",
