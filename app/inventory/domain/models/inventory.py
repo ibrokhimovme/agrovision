@@ -41,7 +41,9 @@ class Warehouse(Base, UUIDPrimaryKeyMixin, AuditMixin):
     """
     __tablename__ = "warehouses"
 
-    farm_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    # EX-10 (Inventory Linkage Hardening, execution-v2): was a bare UUID with
+    # no FK enforcement; hardened per decision_log.md BMD-014.
+    farm_id: Mapped[UUID] = mapped_column(ForeignKey("farm.farms.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -58,6 +60,10 @@ class StockItem(Base, UUIDPrimaryKeyMixin, AuditMixin):
     Minimum stock alert threshold triggers LowStockAlertEvent (SRS §5.22).
     """
     __tablename__ = "stock_items"
+    # EX-10 (execution-v2): explicit schema required so poultry's
+    # FeedConsumption.feed_inventory_item_id can resolve a cross-schema FK
+    # to this table — same M8/CL-030 lesson applied for Account/Farm/Batch.
+    __table_args__ = {"schema": "inventory"}
 
     warehouse_id: Mapped[UUID] = mapped_column(
         ForeignKey("warehouses.id", ondelete="CASCADE"), nullable=False, index=True
@@ -93,7 +99,7 @@ class StockBatch(Base, UUIDPrimaryKeyMixin, AuditMixin):
     __tablename__ = "stock_batches"
 
     stock_item_id: Mapped[UUID] = mapped_column(
-        ForeignKey("stock_items.id", ondelete="CASCADE"), nullable=False, index=True
+        ForeignKey("inventory.stock_items.id", ondelete="CASCADE"), nullable=False, index=True
     )
     batch_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     quantity: Mapped[Decimal] = mapped_column(Numeric(15, 4), nullable=False)
@@ -122,9 +128,10 @@ class StockMovement(Base, UUIDPrimaryKeyMixin, AuditMixin):
     __tablename__ = "stock_movements"
 
     stock_item_id: Mapped[UUID] = mapped_column(
-        ForeignKey("stock_items.id", ondelete="RESTRICT"), nullable=False, index=True
+        ForeignKey("inventory.stock_items.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    warehouse_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    # EX-10 (execution-v2): was a bare UUID with no FK enforcement.
+    warehouse_id: Mapped[UUID] = mapped_column(ForeignKey("warehouses.id"), nullable=False, index=True)
     movement_type: Mapped[MovementType] = mapped_column(String(20), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(15, 4), nullable=False)
     unit: Mapped[str] = mapped_column(String(20), nullable=False)
