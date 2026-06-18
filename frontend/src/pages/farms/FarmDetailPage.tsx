@@ -1,14 +1,26 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { farmService, type CreateBuildingPayload, type CreateSectionPayload } from '@/services/batchService'
+import { farmService, batchService, type CreateBuildingPayload, type CreateSectionPayload } from '@/services/batchService'
 import { useToastStore } from '@/components/ui/Toast'
-import type { Farm, Building, Section, SectionType } from '@/types'
+import type { Farm, Building, Section, SectionType, Batch } from '@/types'
 
+// EX-03 (execution-v2): 'quarantine' removed per decision_log.md BMD-002.
 const SECTION_TYPE_LABELS: Record<SectionType, string> = {
-  quarantine: 'Karantin',
   production: 'Ishlab chiqarish',
   isolation: 'Izolyatsiya',
   storage: 'Saqlash',
+}
+
+// EX-04 (execution-v2): 'quarantine'/'closed' replaced by the 2-state
+// ACTIVE/COMPLETED model per decision_log.md BMD-002/BMD-003 (same labels
+// as ReportsPage.tsx/FinancePage.tsx, for consistency across the app).
+const BATCH_STATUS_BADGE: Record<string, string> = {
+  active: 'bg-green-100 text-green-700',
+  completed: 'bg-gray-100 text-gray-500',
+}
+const BATCH_STATUS_LABELS: Record<string, string> = {
+  active: 'Faol',
+  completed: 'Yakunlangan',
 }
 
 export default function FarmDetailPage() {
@@ -18,6 +30,7 @@ export default function FarmDetailPage() {
   const [farm, setFarm] = useState<Farm | null>(null)
   const [buildings, setBuildings] = useState<Building[]>([])
   const [sections, setSections] = useState<Record<string, Section[]>>({})
+  const [batches, setBatches] = useState<Batch[]>([])
   const [loading, setLoading] = useState(true)
 
   const [showBuildingForm, setShowBuildingForm] = useState(false)
@@ -45,11 +58,16 @@ export default function FarmDetailPage() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    Promise.all([farmService.getFarm(id), farmService.listBuildings(id)])
-      .then(async ([farmRes, bldRes]) => {
+    Promise.all([
+      farmService.getFarm(id),
+      farmService.listBuildings(id),
+      batchService.listBatches({ farm_id: id, page_size: 100 }),
+    ])
+      .then(async ([farmRes, bldRes, batchRes]) => {
         setFarm(farmRes.data)
         const blds = bldRes.data
         setBuildings(blds)
+        setBatches(batchRes.data)
         const sectionMap: Record<string, Section[]> = {}
         await Promise.all(
           blds.map(async (b) => {
@@ -180,6 +198,61 @@ export default function FarmDetailPage() {
         )}
       </div>
 
+      {/* Batches — EX-13 (execution-v2): farm detail view redesign, decision_log.md */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">Partiyalar</h2>
+          <Link
+            to="/livestock/new"
+            className="text-sm px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            + Partiya qo'shish
+          </Link>
+        </div>
+
+        {batches.length === 0 ? (
+          <div className="text-center py-10 text-gray-400 border border-dashed border-gray-200 rounded-xl">
+            Hali partiyalar yo'q.
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Partiya</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Holat</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Joriy soni</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Omon qolish</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joylashtirilgan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {batches.map((batch) => (
+                  <tr key={batch.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">
+                      <Link to={`/livestock/${batch.id}`} className="text-green-700 hover:underline font-medium">
+                        {batch.batch_code}
+                      </Link>
+                      <span className="ml-2 text-xs text-gray-400 capitalize">{batch.species}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${BATCH_STATUS_BADGE[batch.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {BATCH_STATUS_LABELS[batch.status] ?? batch.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-gray-900">{batch.current_count.toLocaleString('uz-UZ')} bosh</td>
+                    <td className="px-4 py-3 text-sm text-right text-gray-900">{Number(batch.survival_rate).toFixed(1)}%</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {new Date(batch.placement_date).toLocaleDateString('uz-UZ')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Buildings */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -299,7 +372,6 @@ export default function FarmDetailPage() {
                           className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
                         >
                           <option value="production">Ishlab chiqarish</option>
-                          <option value="quarantine">Karantin</option>
                           <option value="isolation">Izolyatsiya</option>
                           <option value="storage">Saqlash</option>
                         </select>

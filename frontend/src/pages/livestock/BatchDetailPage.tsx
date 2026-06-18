@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { batchService, expenseService, feedService, mortalityService, profitService, saleService, vaccinationService, weightService } from '@/services/batchService'
-import type { Batch, BatchCloseReason, BatchCostSummary, BatchProfit, BatchSalesSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MortalityRecord, MortalitySummary, SaleRecord, VaccinationRecord, WeightSampling } from '@/types'
+import { batchService, expenseService, feedService, medicationService, mortalityService, profitService, saleService, vaccinationService, weightService } from '@/services/batchService'
+import { stockService } from '@/services/inventoryService'
+import type { StockItemDetail } from '@/services/inventoryService'
+import type { Batch, BatchCloseReason, BatchCostSummary, BatchProfit, BatchSalesSummary, Expense, FeedRecord, FeedSummary, GrowthMetrics, MedicationRecord, MortalityRecord, MortalitySummary, SaleRecord, VaccinationRecord, WeightSampling } from '@/types'
 
+// EX-04 (execution-v2): 'quarantine'/'closed' replaced by the 2-state
+// ACTIVE/COMPLETED model per decision_log.md BMD-002/BMD-003.
 const STATUS_LABELS: Record<string, string> = {
-  quarantine: 'Karantin',
   active: 'Faol',
-  closed: 'Yopilgan',
+  completed: 'Yakunlangan',
 }
 
 const STATUS_BADGE_CLASSES: Record<string, string> = {
-  quarantine: 'bg-yellow-100 text-yellow-800',
   active: 'bg-green-100 text-green-800',
-  closed: 'bg-gray-100 text-gray-700',
+  completed: 'bg-gray-100 text-gray-700',
 }
 
 const SPECIES_LABELS: Record<string, string> = {
@@ -20,15 +22,15 @@ const SPECIES_LABELS: Record<string, string> = {
   layer: 'Tuxumchi',
 }
 
+// EX-04 (execution-v2): 'slaughter' removed per decision_log.md BMD-003.
 const CLOSE_REASON_LABELS: Record<string, string> = {
   sale: "Sotish",
-  slaughter: "So'yish",
   transfer: "Ko'chirish",
   disease: "Kasallik",
   other: "Boshqa",
 }
 
-const CLOSE_REASONS: BatchCloseReason[] = ['sale', 'slaughter', 'transfer', 'disease', 'other']
+const CLOSE_REASONS: BatchCloseReason[] = ['sale', 'transfer', 'disease', 'other']
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -74,6 +76,16 @@ export default function BatchDetailPage() {
   const [vaccLoading, setVaccLoading] = useState(false)
   const [vaccError, setVaccError] = useState<string | null>(null)
   const [completingId, setCompletingId] = useState<string | null>(null)
+
+  // Medication state (EX-09, execution-v2)
+  const [medicationRecords, setMedicationRecords] = useState<MedicationRecord[]>([])
+  const [medicineItems, setMedicineItems] = useState<StockItemDetail[]>([])
+  const [medLoading, setMedLoading] = useState(false)
+  const [medError, setMedError] = useState<string | null>(null)
+  const [medDate, setMedDate] = useState(today())
+  const [medItemId, setMedItemId] = useState('')
+  const [medQty, setMedQty] = useState('')
+  const [medReason, setMedReason] = useState('')
 
   // Cost tracking state
   const [costSummary, setCostSummary] = useState<BatchCostSummary | null>(null)
@@ -128,6 +140,14 @@ export default function BatchDetailPage() {
     weightService.getMetrics(batchId).then((res) => setGrowthMetrics(res.data)).catch(() => {})
   }
 
+  const loadMedicationData = (batchId: string, farmId: string) => {
+    medicationService.listMedication(batchId, 1, 20).then((res) => setMedicationRecords(res.data)).catch(() => {})
+    stockService
+      .listStockItems(farmId, 1, 100)
+      .then((res) => setMedicineItems(res.data.filter((i) => i.item_type === 'medicine')))
+      .catch(() => {})
+  }
+
   const loadCostData = (batchId: string) => {
     expenseService.getBatchCostSummary(batchId).then((res) => setCostSummary(res.data)).catch(() => {})
     expenseService.listBatchExpenses(batchId, 1, 20).then((res) => setExpenses(res.data)).catch(() => {})
@@ -148,6 +168,7 @@ export default function BatchDetailPage() {
       loadMortalityData(id)
       loadVaccinations(id)
       loadWeightData(id)
+      loadMedicationData(id, batch.farm_id)
       loadCostData(id)
       loadSalesData(id)
       loadProfitData(id)
@@ -233,6 +254,34 @@ export default function BatchDetailPage() {
     }
   }
 
+  const handleRecordMedication = async () => {
+    if (!id || !batch || !medItemId || !medQty) return
+    setMedLoading(true)
+    setMedError(null)
+    try {
+      const item = medicineItems.find((i) => i.id === medItemId)
+      await medicationService.recordMedication(id, {
+        farm_id: batch.farm_id,
+        medicine_name: item?.name ?? '',
+        medicine_inventory_item_id: medItemId,
+        quantity_used: parseFloat(medQty),
+        unit: item?.unit ?? '',
+        reason: medReason || undefined,
+        administered_at: new Date(medDate).toISOString(),
+      })
+      setMedItemId('')
+      setMedQty('')
+      setMedReason('')
+      setMedDate(today())
+      loadMedicationData(id, batch.farm_id)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } }
+      setMedError(axiosError?.response?.data?.message ?? "Xatolik yuz berdi")
+    } finally {
+      setMedLoading(false)
+    }
+  }
+
   const handleRecordFeed = async () => {
     if (!id || !batch || !feedQty) return
     setFeedLoading(true)
@@ -315,21 +364,6 @@ export default function BatchDetailPage() {
     }
   }
 
-  const handleActivate = async () => {
-    if (!id || !batch) return
-    setActionLoading(true)
-    setActionError(null)
-    try {
-      const res = await batchService.activateBatch(id)
-      setBatch(res.data)
-    } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string } } }
-      setActionError(axiosError?.response?.data?.message ?? "Faollashtirish muvaffaqiyatsiz")
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
   const handleClose = async () => {
     if (!id || !batch) return
     setActionLoading(true)
@@ -374,7 +408,7 @@ export default function BatchDetailPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Partiya {batch.batch_code ?? batch.id.slice(0, 8)}
+            Partiya {batch.batch_code}
           </h1>
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE_CLASSES[batch.status]}`}
@@ -401,12 +435,6 @@ export default function BatchDetailPage() {
           label="Joylashgan sana"
           value={new Date(batch.placement_date).toLocaleDateString('uz-UZ')}
         />
-        {batch.quarantine_end_date && (
-          <InfoCard
-            label="Karantin tugash sanasi"
-            value={new Date(batch.quarantine_end_date).toLocaleDateString('uz-UZ')}
-          />
-        )}
         {batch.supplier_name && (
           <InfoCard label="Ta'minotchi" value={batch.supplier_name} />
         )}
@@ -438,15 +466,6 @@ export default function BatchDetailPage() {
 
       {/* Actions */}
       <div className="flex gap-3 mb-6 flex-wrap">
-        {batch.status === 'quarantine' && (
-          <button
-            onClick={handleActivate}
-            disabled={actionLoading}
-            className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-          >
-            {actionLoading ? 'Kutilmoqda...' : 'Faollashtirish'}
-          </button>
-        )}
         {batch.status === 'active' && (
           <button
             onClick={() => setShowCloseModal(true)}
@@ -657,6 +676,115 @@ export default function BatchDetailPage() {
                           {Number(r.average_weight_kg).toFixed(3)}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-600">{r.sample_size}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Medication Section (EX-09, execution-v2) */}
+      {batch.status === 'active' && (
+        <div className="space-y-4 mb-6">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Dori-darmon berish</h2>
+            {medError && (
+              <div className="text-red-600 text-sm mb-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {medError}
+              </div>
+            )}
+            {medicineItems.length === 0 ? (
+              <p className="text-sm text-gray-400 mb-3">
+                Dori-darmon turidagi ombor mahsulotlari topilmadi — avval ombor bo'limida qo'shing.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Sana</label>
+                  <input
+                    type="date"
+                    value={medDate}
+                    onChange={(e) => setMedDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Dori *</label>
+                  <select
+                    value={medItemId}
+                    onChange={(e) => setMedItemId(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Dorini tanlang</option>
+                    {medicineItems.map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.name} ({i.unit})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Miqdori *</label>
+                  <input
+                    type="number"
+                    min="0.0001"
+                    step="0.0001"
+                    placeholder="masalan: 50"
+                    value={medQty}
+                    onChange={(e) => setMedQty(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Sabab</label>
+                  <input
+                    type="text"
+                    placeholder="masalan: nafas yo'llari kasalligi profilaktikasi"
+                    value={medReason}
+                    onChange={(e) => setMedReason(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+            )}
+            <button
+              onClick={handleRecordMedication}
+              disabled={medLoading || !medItemId || !medQty}
+              className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {medLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+          </div>
+
+          {medicationRecords.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900">Dori-darmon tarixi</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Sana</th>
+                      <th className="px-4 py-3 text-left">Dori</th>
+                      <th className="px-4 py-3 text-right">Miqdori</th>
+                      <th className="px-4 py-3 text-left">Sabab</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {medicationRecords.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-gray-700">
+                          {new Date(r.administered_at).toLocaleDateString('uz-UZ')}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">{r.medicine_name}</td>
+                        <td className="px-4 py-3 text-right font-medium text-blue-700">
+                          {Number(r.quantity_used)} {r.unit}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{r.reason ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -967,8 +1095,14 @@ export default function BatchDetailPage() {
                       <td className="px-3 py-2 text-right text-gray-700">{Number(s.price_per_kg_uzs).toLocaleString()}</td>
                       <td className="px-3 py-2 text-right font-semibold text-gray-900">{Number(s.total_revenue_uzs).toLocaleString()}</td>
                       <td className="px-3 py-2 text-center">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                          {s.payment_status === 'paid' ? "To'langan" : "Kutilmoqda"}
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          s.payment_status === 'paid'
+                            ? 'bg-green-100 text-green-700'
+                            : s.payment_status === 'partial'
+                            ? 'bg-orange-100 text-orange-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {s.payment_status === 'paid' ? "To'langan" : s.payment_status === 'partial' ? "Qisman to'langan" : "Kutilmoqda"}
                         </span>
                       </td>
                     </tr>

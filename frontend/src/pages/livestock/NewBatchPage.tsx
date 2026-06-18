@@ -12,7 +12,6 @@ const schema = z.object({
   species: z.enum(['broiler', 'layer']),
   initial_count: z.coerce.number().int().min(1, "Kamida 1 ta qush kerak"),
   placement_date: z.string().min(1, "Sana kiritilsin"),
-  batch_code: z.string().optional(),
   supplier_name: z.string().optional(),
   chick_price_per_head: z.coerce.number().positive().optional().or(z.literal('')),
   notes: z.string().optional(),
@@ -95,7 +94,6 @@ export default function NewBatchPage() {
         species: data.species,
         initial_count: data.initial_count,
         placement_date: new Date(data.placement_date).toISOString(),
-        batch_code: data.batch_code || undefined,
         supplier_name: data.supplier_name || undefined,
         chick_price_per_head:
           data.chick_price_per_head !== '' && data.chick_price_per_head != null
@@ -191,9 +189,7 @@ export default function NewBatchPage() {
               {sections.filter((s) => s.is_active).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.section_type === 'quarantine'
-                    ? ' — Karantin'
-                    : s.section_type === 'isolation'
+                  {s.section_type === 'isolation'
                     ? ' — Izolyatsiya'
                     : s.section_type === 'storage'
                     ? ' — Saqlash'
@@ -251,17 +247,6 @@ export default function NewBatchPage() {
           {errors.placement_date && (
             <p className="text-red-500 text-xs mt-1">{errors.placement_date.message}</p>
           )}
-        </div>
-
-        {/* Batch code */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Partiya kodi</label>
-          <input
-            type="text"
-            {...register('batch_code')}
-            placeholder="Masalan: B-2026-001"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
         </div>
 
         {/* Supplier name */}

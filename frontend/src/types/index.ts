@@ -51,6 +51,7 @@ export interface AdminUser {
   is_active: boolean;
   is_superuser: boolean;
   farm_id?: string;
+  account_id?: string; // EX-15 (execution-v2): account-aware user management
   roles: RoleDetail[];
 }
 
@@ -75,7 +76,8 @@ export interface UserProfile {
 // ── Farm ──────────────────────────────────────────────────────────────────────
 
 export type FarmType = 'poultry' | 'livestock' | 'dairy' | 'mixed';
-export type SectionType = 'quarantine' | 'production' | 'isolation' | 'storage';
+// EX-03 (execution-v2): 'quarantine' removed per decision_log.md BMD-002.
+export type SectionType = 'production' | 'isolation' | 'storage';
 
 export interface Farm {
   id: string;
@@ -110,10 +112,13 @@ export interface Section {
 
 // ── Livestock / Batches ───────────────────────────────────────────────────────
 
-export type Species = 'broiler' | 'layer' | 'cattle' | 'sheep' | 'goat';
+// EX-04 (execution-v2): the multi-species 'Species' type (cattle/sheep/goat)
+// and 'quarantine'/'slaughter' values were removed entirely per
+// decision_log.md BMD-002/BMD-003/BMD-004 — permanently out of scope, not
+// deferred. It was unused anywhere except its own declaration.
 export type PoultrySpecies = 'broiler' | 'layer';
-export type BatchStatus = 'quarantine' | 'active' | 'closed';
-export type BatchCloseReason = 'sale' | 'slaughter' | 'transfer' | 'disease' | 'other';
+export type BatchStatus = 'active' | 'completed';
+export type BatchCloseReason = 'sale' | 'transfer' | 'disease' | 'other';
 
 export interface Batch {
   id: string;
@@ -121,11 +126,12 @@ export interface Batch {
   section_id: string;
   species: PoultrySpecies;
   status: BatchStatus;
-  batch_code?: string;
+  // EX-05 (execution-v2): batch_code is mandatory and always
+  // server-generated per decision_log.md BMD-012 — never absent.
+  batch_code: string;
   initial_count: number;
   current_count: number;
   placement_date: string;
-  quarantine_end_date?: string;
   closed_at?: string;
   close_reason?: BatchCloseReason;
   supplier_name?: string;
@@ -133,6 +139,10 @@ export interface Batch {
   notes?: string;
   total_mortality: number;
   survival_rate: number;
+  // EX-16 (execution-v2): archive system, decision_log.md BMD-018.
+  is_archived: boolean;
+  archived_at?: string;
+  archived_by?: string;
   created_at: string;
   updated_at: string;
 }
@@ -212,6 +222,24 @@ export interface VaccinationSchedule {
   notes?: string;
 }
 
+// ── Medication ────────────────────────────────────────────────────────────────
+// EX-09 (execution-v2): first live write path for MedicationRecord, per
+// decision_log.md BMD-013.
+
+export interface MedicationRecord {
+  id: string;
+  batch_id: string;
+  farm_id: string;
+  medicine_name: string;
+  medicine_inventory_item_id: string;
+  quantity_used: number;
+  unit: string;
+  reason?: string;
+  dosage_notes?: string;
+  administered_at: string;
+  notes?: string;
+}
+
 // ── Feed Consumption ──────────────────────────────────────────────────────────
 
 export interface FeedRecord {
@@ -236,7 +264,8 @@ export interface FeedSummary {
 
 // ── Sales ─────────────────────────────────────────────────────────────────────
 
-export type SalePaymentStatus = 'paid' | 'pending'
+// EX-11 (execution-v2): 'partial' added per decision_log.md BMD-015.
+export type SalePaymentStatus = 'paid' | 'pending' | 'partial'
 
 export interface SaleRecord {
   id: string
@@ -248,6 +277,8 @@ export interface SaleRecord {
   quantity_kg: number
   price_per_kg_uzs: number
   total_revenue_uzs: number
+  amount_paid: number
+  outstanding_amount: number
   payment_status: SalePaymentStatus
   sold_at: string
   notes?: string
@@ -283,6 +314,7 @@ export interface BatchReport {
   status: string
   placement_date: string
   age_days: number | null
+  is_archived: boolean // EX-16 (execution-v2)
   fcr: number | null
   adg_grams: number | null
   latest_avg_weight_kg: number | null
@@ -297,6 +329,19 @@ export interface BatchReport {
   profit_margin_pct: number | null
   sale_count: number | null
   expense_count: number | null
+}
+
+// EX-12 (execution-v2): cross-farm comparison row — aggregated across all of a farm's batches.
+export interface FarmComparisonRow {
+  farm_id: string
+  batch_count: number
+  avg_fcr: number | null
+  avg_mortality_rate_pct: number | null
+  total_feed_kg: number | null
+  total_revenue_uzs: number | null
+  total_cost_uzs: number | null
+  total_profit_uzs: number | null
+  avg_profit_margin_pct: number | null
 }
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
@@ -328,6 +373,10 @@ export interface Expense {
   description: string
   amount: number
   currency: string
+  supplier_id?: string
+  amount_paid: number
+  outstanding_amount: number
+  payment_status: 'pending' | 'partial' | 'paid'
   source_event_id?: string
   expense_date: string
   notes?: string
@@ -339,6 +388,41 @@ export interface BatchCostSummary {
   total_uzs: number
   breakdown: Record<string, number>
   expense_count: number
+}
+
+// ── Suppliers / Debtor-Creditor (EX-11, execution-v2) ─────────────────────────
+// decision_log.md BMD-015: supplier debt, customer debt, partial payments,
+// outstanding balances, debtor/creditor summary.
+
+export interface Supplier {
+  id: string
+  farm_id: string
+  name: string
+  phone?: string
+  address?: string
+  is_active: boolean
+}
+
+export interface DebtorEntry {
+  customer_name: string
+  customer_phone?: string
+  outstanding_amount: number
+  sale_count: number
+}
+
+export interface CreditorEntry {
+  supplier_id: string
+  supplier_name: string
+  outstanding_amount: number
+  expense_count: number
+}
+
+export interface DebtorCreditorSummary {
+  farm_id: string
+  total_receivable_uzs: number
+  total_payable_uzs: number
+  debtors: DebtorEntry[]
+  creditors: CreditorEntry[]
 }
 
 // ── Finance ───────────────────────────────────────────────────────────────────

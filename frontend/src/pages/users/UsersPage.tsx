@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useAuthStore } from '@/store'
 import { userService, type CreateUserPayload } from '@/services/userService'
+import { farmService } from '@/services/batchService'
 import { useToastStore } from '@/components/ui/Toast'
-import type { AdminUser, RoleDetail } from '@/types'
+import type { AdminUser, RoleDetail, Farm } from '@/types'
 
 type ModalMode = 'create' | 'edit' | null
 
@@ -12,14 +12,17 @@ const EMPTY_CREATE: CreateUserPayload = {
   password: '',
   role_name: '',
   phone: '',
+  farm_id: '',
 }
 
 export default function UsersPage() {
-  const currentUser = useAuthStore((s) => s.user)
   const showToast = useToastStore((s) => s.show)
 
   const [users, setUsers] = useState<AdminUser[]>([])
   const [roles, setRoles] = useState<RoleDetail[]>([])
+  // EX-15 (execution-v2): account-wide (multi-farm) user management,
+  // decision_log.md BMD-017 — farms already account-scoped per EX-02.
+  const [farms, setFarms] = useState<Farm[]>([])
   const [loading, setLoading] = useState(true)
 
   const [modal, setModal] = useState<ModalMode>(null)
@@ -30,31 +33,30 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
 
-  const farmId = currentUser?.farm_id ?? ''
+  const farmNameById = Object.fromEntries(farms.map((f) => [f.id, f.name]))
 
   const load = () => {
-    if (!farmId) return
     setLoading(true)
     userService
-      .listUsers(farmId)
+      .listUsers()
       .then((res) => setUsers(res.data))
       .catch(() => showToast('error', 'Foydalanuvchilar yuklanmadi'))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    if (!farmId) { setLoading(false); return }
-    Promise.all([userService.listUsers(farmId), userService.listRoles()])
-      .then(([usersRes, rolesRes]) => {
+    Promise.all([userService.listUsers(), userService.listRoles(), farmService.listFarms()])
+      .then(([usersRes, rolesRes, farmsRes]) => {
         setUsers(usersRes.data)
         setRoles(rolesRes.data)
+        setFarms(farmsRes.data)
       })
       .catch(() => showToast('error', "Ma'lumotlar yuklanmadi"))
       .finally(() => setLoading(false))
-  }, [farmId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openCreate = () => {
-    setCreateForm({ ...EMPTY_CREATE, role_name: roles[0]?.name ?? '' })
+    setCreateForm({ ...EMPTY_CREATE, role_name: roles[0]?.name ?? '', farm_id: farms[0]?.id ?? '' })
     setModal('create')
   }
 
@@ -72,7 +74,7 @@ export default function UsersPage() {
     try {
       await userService.createUser({
         ...createForm,
-        farm_id: farmId || undefined,
+        farm_id: createForm.farm_id || undefined,
         phone: createForm.phone || undefined,
       })
       showToast('success', 'Foydalanuvchi yaratildi')
@@ -129,12 +131,6 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {!farmId && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-          Ferma aniqlanmadi. Foydalanuvchilarni ko'rish uchun fermaga bog'langan hisob bilan kiring.
-        </div>
-      )}
-
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full border-2 border-gray-200 border-t-green-600 h-8 w-8" />
@@ -154,6 +150,7 @@ export default function UsersPage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">F.I.O</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Telefon</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Ferma</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Rol</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Holat</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Amallar</th>
@@ -171,6 +168,9 @@ export default function UsersPage() {
                   <td className="px-4 py-3 text-gray-600">{user.email}</td>
                   <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
                     {user.phone ?? '—'}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {user.farm_id ? (farmNameById[user.farm_id] ?? '—') : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
@@ -281,6 +281,21 @@ export default function UsersPage() {
                 ))}
               </select>
             </div>
+
+            {farms.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ferma</label>
+                <select
+                  value={createForm.farm_id ?? ''}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, farm_id: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  {farms.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>

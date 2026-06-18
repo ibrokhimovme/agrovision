@@ -17,9 +17,12 @@ export interface UpdateUserPayload {
 }
 
 export const userService = {
-  async listUsers(farmId: string, page = 1, pageSize = 50): Promise<PaginatedResponse<AdminUser>> {
+  // EX-15 (execution-v2): farmId omitted lists account-wide (all farms in
+  // the caller's account); the backend resolves the account from the
+  // request's auth context, not a client-supplied value.
+  async listUsers(farmId?: string, page = 1, pageSize = 50): Promise<PaginatedResponse<AdminUser>> {
     const resp = await apiClient.get<PaginatedResponse<AdminUser>>('/users/', {
-      params: { farm_id: farmId, page, page_size: pageSize },
+      params: { farm_id: farmId || undefined, page, page_size: pageSize },
     })
     return resp.data
   },

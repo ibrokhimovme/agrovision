@@ -15,6 +15,7 @@ import type {
   FeedSummary,
   MortalityRecord,
   MortalitySummary,
+  MedicationRecord,
   VaccinationRecord,
   VaccinationSchedule,
   WeightSampling,
@@ -27,6 +28,8 @@ import type {
   BatchSalesSummary,
   SalePaymentStatus,
   BatchProfit,
+  Supplier,
+  DebtorCreditorSummary,
 } from '@/types'
 
 export interface CreateFarmPayload {
@@ -63,19 +66,15 @@ export interface CreateBatchPayload {
   species: PoultrySpecies
   initial_count: number
   placement_date: string
-  batch_code?: string
   supplier_name?: string
   chick_price_per_head?: number
   notes?: string
-  quarantine_end_date?: string
 }
 
 export interface UpdateBatchPayload {
-  batch_code?: string
   supplier_name?: string
   chick_price_per_head?: number
   notes?: string
-  quarantine_end_date?: string
 }
 
 export interface CloseBatchPayload {
@@ -86,6 +85,9 @@ export interface CloseBatchPayload {
 export interface ListBatchesParams {
   farm_id: string
   status?: BatchStatus
+  // EX-16 (execution-v2): 'false' (default, active views) excludes archived
+  // batches; 'true' is the Archive view; 'all' is Reports' filter-supported view.
+  archived?: 'true' | 'false' | 'all'
   page?: number
   page_size?: number
 }
@@ -111,13 +113,20 @@ export const batchService = {
     return resp.data
   },
 
-  async activateBatch(id: string): Promise<APIResponse<Batch>> {
-    const resp = await apiClient.post<APIResponse<Batch>>(`/batches/${id}/activate`)
+  async closeBatch(id: string, payload: CloseBatchPayload): Promise<APIResponse<Batch>> {
+    const resp = await apiClient.post<APIResponse<Batch>>(`/batches/${id}/close`, payload)
     return resp.data
   },
 
-  async closeBatch(id: string, payload: CloseBatchPayload): Promise<APIResponse<Batch>> {
-    const resp = await apiClient.post<APIResponse<Batch>>(`/batches/${id}/close`, payload)
+  // EX-16 (execution-v2): manual-only archiving, restricted server-side to
+  // Account Owner / Farm Director (decision_log.md BMD-018).
+  async archiveBatch(id: string): Promise<APIResponse<Batch>> {
+    const resp = await apiClient.post<APIResponse<Batch>>(`/batches/${id}/archive`, {})
+    return resp.data
+  },
+
+  async unarchiveBatch(id: string): Promise<APIResponse<Batch>> {
+    const resp = await apiClient.post<APIResponse<Batch>>(`/batches/${id}/unarchive`, {})
     return resp.data
   },
 }
@@ -227,6 +236,32 @@ export const mortalityService = {
   },
 }
 
+export interface RecordMedicationPayload {
+  farm_id: string
+  medicine_name: string
+  medicine_inventory_item_id: string
+  quantity_used: number
+  unit: string
+  reason?: string
+  dosage_notes?: string
+  administered_at?: string
+  notes?: string
+}
+
+export const medicationService = {
+  async recordMedication(batchId: string, payload: RecordMedicationPayload): Promise<APIResponse<MedicationRecord>> {
+    const resp = await apiClient.post<APIResponse<MedicationRecord>>(`/batches/${batchId}/medication`, payload)
+    return resp.data
+  },
+
+  async listMedication(batchId: string, page = 1, page_size = 20): Promise<PaginatedResponse<MedicationRecord>> {
+    const resp = await apiClient.get<PaginatedResponse<MedicationRecord>>(`/batches/${batchId}/medication`, {
+      params: { page, page_size },
+    })
+    return resp.data
+  },
+}
+
 export interface CreateSchedulePayload {
   farm_id: string
   species: string
@@ -308,6 +343,9 @@ export interface RecordExpensePayload {
   description: string
   amount: number
   currency?: string
+  // EX-11 (execution-v2): supplier debt / partial-payment tracking.
+  supplier_id?: string
+  amount_paid?: number
   notes?: string
 }
 
@@ -328,6 +366,11 @@ export const expenseService = {
     const resp = await apiClient.get<APIResponse<BatchCostSummary>>(`/expenses/batch/${batchId}/cost-summary`)
     return resp.data
   },
+
+  async recordExpensePayment(expenseId: string, amount: number): Promise<APIResponse<Expense>> {
+    const resp = await apiClient.patch<APIResponse<Expense>>(`/expenses/${expenseId}/payment`, { amount })
+    return resp.data
+  },
 }
 
 export interface RecordSalePayload {
@@ -338,6 +381,8 @@ export interface RecordSalePayload {
   quantity_kg: number
   price_per_kg_uzs: number
   payment_status?: SalePaymentStatus
+  // EX-11 (execution-v2): exact amount paid, for partial-payment tracking.
+  amount_paid?: number
   notes?: string
 }
 
@@ -358,11 +403,44 @@ export const saleService = {
     const resp = await apiClient.get<APIResponse<BatchSalesSummary>>(`/sales/batch/${batchId}/summary`)
     return resp.data
   },
+
+  async recordSalePayment(saleId: string, amount: number): Promise<APIResponse<SaleRecord>> {
+    const resp = await apiClient.patch<APIResponse<SaleRecord>>(`/sales/${saleId}/payment`, { amount })
+    return resp.data
+  },
 }
 
 export const profitService = {
   async getBatchProfit(batchId: string): Promise<APIResponse<BatchProfit>> {
     const resp = await apiClient.get<APIResponse<BatchProfit>>(`/profit/batch/${batchId}`)
+    return resp.data
+  },
+}
+
+export interface CreateSupplierPayload {
+  farm_id: string
+  name: string
+  phone?: string
+  address?: string
+}
+
+export const supplierService = {
+  async createSupplier(payload: CreateSupplierPayload): Promise<APIResponse<Supplier>> {
+    const resp = await apiClient.post<APIResponse<Supplier>>('/suppliers/', payload)
+    return resp.data
+  },
+
+  async listSuppliers(farmId: string): Promise<APIResponse<Supplier[]>> {
+    const resp = await apiClient.get<APIResponse<Supplier[]>>('/suppliers/', { params: { farm_id: farmId } })
+    return resp.data
+  },
+}
+
+export const debtService = {
+  async getDebtorCreditorSummary(farmId: string): Promise<APIResponse<DebtorCreditorSummary>> {
+    const resp = await apiClient.get<APIResponse<DebtorCreditorSummary>>('/debtors-creditors-summary', {
+      params: { farm_id: farmId },
+    })
     return resp.data
   },
 }

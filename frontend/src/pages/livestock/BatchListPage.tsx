@@ -1,18 +1,29 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { batchService, farmService } from '@/services/batchService'
+import { useAuthStore } from '@/store'
+import { useToastStore } from '@/components/ui/Toast'
 import type { Batch, BatchStatus, Farm } from '@/types'
 
+// EX-16 (execution-v2): archive/un-archive authority — Account Owner and
+// Farm Director per decision_log.md BMD-018; maps onto the existing
+// `farm_owner` role (no separate roles exist for those exact titles, and
+// adding them would be RBAC redesign, out of scope per EX-15), same
+// convention as the backend's `_can_archive` in batches.py.
+function canArchive(roles: string[]): boolean {
+  return roles.includes('super_admin') || roles.includes('farm_owner')
+}
+
+// EX-04 (execution-v2): 'quarantine'/'closed' replaced by the 2-state
+// ACTIVE/COMPLETED model per decision_log.md BMD-002/BMD-003.
 const STATUS_LABELS: Record<BatchStatus, string> = {
-  quarantine: 'Karantin',
   active: 'Faol',
-  closed: 'Yopilgan',
+  completed: 'Yakunlangan',
 }
 
 const STATUS_BADGE_CLASSES: Record<BatchStatus, string> = {
-  quarantine: 'bg-yellow-100 text-yellow-800',
   active: 'bg-green-100 text-green-800',
-  closed: 'bg-gray-100 text-gray-700',
+  completed: 'bg-gray-100 text-gray-700',
 }
 
 const SPECIES_LABELS: Record<string, string> = {
@@ -21,17 +32,25 @@ const SPECIES_LABELS: Record<string, string> = {
 }
 
 type StatusFilter = BatchStatus | 'all'
+type ArchiveTab = 'current' | 'archive'
 
 const DEFAULT_FARM_ID = '11111111-1111-1111-1111-111111111111'
 
 export default function BatchListPage() {
+  const currentUser = useAuthStore((s) => s.user)
+  const showToast = useToastStore((s) => s.show)
+  const allowedToArchive = canArchive(currentUser?.roles ?? [])
+
   const [batches, setBatches] = useState<Batch[]>([])
   const [farms, setFarms] = useState<Farm[]>([])
   const [selectedFarmId, setSelectedFarmId] = useState<string>(DEFAULT_FARM_ID)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  // EX-16 (execution-v2): "Joriy" (current, non-archived) vs "Arxiv" tab.
+  const [archiveTab, setArchiveTab] = useState<ArchiveTab>('current')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
+  const [actioningId, setActioningId] = useState<string | null>(null)
 
   useEffect(() => {
     farmService
@@ -47,7 +66,7 @@ export default function BatchListPage() {
       })
   }, [])
 
-  useEffect(() => {
+  const load = () => {
     if (!selectedFarmId) return
     setLoading(true)
     setError(null)
@@ -55,6 +74,7 @@ export default function BatchListPage() {
       .listBatches({
         farm_id: selectedFarmId,
         status: statusFilter !== 'all' ? statusFilter : undefined,
+        archived: archiveTab === 'archive' ? 'true' : 'false',
         page: 1,
         page_size: 50,
       })
@@ -64,13 +84,40 @@ export default function BatchListPage() {
       })
       .catch(() => setError("Ma'lumotlarni yuklashda xatolik yuz berdi."))
       .finally(() => setLoading(false))
-  }, [selectedFarmId, statusFilter])
+  }
+
+  useEffect(load, [selectedFarmId, statusFilter, archiveTab]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleArchive = async (batch: Batch) => {
+    setActioningId(batch.id)
+    try {
+      await batchService.archiveBatch(batch.id)
+      showToast('success', 'Partiya arxivlandi')
+      load()
+    } catch {
+      showToast('error', 'Arxivlashda xatolik yuz berdi')
+    } finally {
+      setActioningId(null)
+    }
+  }
+
+  const handleUnarchive = async (batch: Batch) => {
+    setActioningId(batch.id)
+    try {
+      await batchService.unarchiveBatch(batch.id)
+      showToast('success', 'Partiya arxivdan chiqarildi')
+      load()
+    } catch {
+      showToast('error', 'Arxivdan chiqarishda xatolik yuz berdi')
+    } finally {
+      setActioningId(null)
+    }
+  }
 
   const statusOptions: { value: StatusFilter; label: string }[] = [
     { value: 'all', label: 'Barchasi' },
-    { value: 'quarantine', label: 'Karantin' },
     { value: 'active', label: 'Faol' },
-    { value: 'closed', label: 'Yopilgan' },
+    { value: 'completed', label: 'Yakunlangan' },
   ]
 
   return (
@@ -86,6 +133,24 @@ export default function BatchListPage() {
         >
           + Yangi partiya
         </Link>
+      </div>
+
+      {/* Joriy / Arxiv tabs — EX-16 (execution-v2) */}
+      <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit">
+        {([
+          { value: 'current', label: 'Joriy' },
+          { value: 'archive', label: 'Arxiv' },
+        ] as { value: ArchiveTab; label: string }[]).map((t) => (
+          <button
+            key={t.value}
+            onClick={() => setArchiveTab(t.value)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              archiveTab === t.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {/* Filters */}
@@ -150,7 +215,7 @@ export default function BatchListPage() {
               {batches.map((batch) => (
                 <tr key={batch.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-700">
-                    {batch.batch_code ?? '—'}
+                    {batch.batch_code}
                   </td>
                   <td className="px-4 py-3 text-gray-700">
                     {SPECIES_LABELS[batch.species] ?? batch.species}
@@ -171,13 +236,32 @@ export default function BatchListPage() {
                   <td className="px-4 py-3 text-gray-500">
                     {new Date(batch.placement_date).toLocaleDateString('uz-UZ')}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 space-x-3">
                     <Link
                       to={`/livestock/${batch.id}`}
                       className="text-green-600 hover:text-green-800 font-medium"
                     >
                       Ko'rish
                     </Link>
+                    {allowedToArchive && batch.status === 'completed' && (
+                      archiveTab === 'current' ? (
+                        <button
+                          onClick={() => handleArchive(batch)}
+                          disabled={actioningId === batch.id}
+                          className="text-gray-500 hover:text-gray-800 font-medium disabled:opacity-50"
+                        >
+                          Arxivlash
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUnarchive(batch)}
+                          disabled={actioningId === batch.id}
+                          className="text-gray-500 hover:text-gray-800 font-medium disabled:opacity-50"
+                        >
+                          Arxivdan chiqarish
+                        </button>
+                      )
+                    )}
                   </td>
                 </tr>
               ))}
